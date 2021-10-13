@@ -32,6 +32,8 @@ dependencies:
 - utf8-string
 - lens
 - mtl
+- hedis
+- extra
 
 library:
   source-dirs: src

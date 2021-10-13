@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4c0874b2ef2dfba274e7619fa8293fa3730bcf01b78804b055fa820462243504
+-- hash: 1df5357331ffd91a84d98bdb0eef76157ffe8218e6cf4a8b35b459ea24036a50
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       LBKiirotori.AccessToken
       LBKiirotori.AccessToken.Core
       LBKiirotori.AccessToken.JWT
+      LBKiirotori.AccessToken.Redis
       LBKiirotori.API.PushMessage
       LBKiirotori.Data.PushMessage
       LBKiirotori.Data.PushMessage.Core
@@ -42,6 +43,8 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , extra
+    , hedis
     , http-conduit
     , jose
     , lens
@@ -64,6 +67,8 @@ executable line-bot-kiirotori
       aeson
     , base >=4.7 && <5
     , bytestring
+    , extra
+    , hedis
     , http-conduit
     , jose
     , lens
@@ -88,6 +93,8 @@ test-suite line-bot-kiirotori-test
       aeson
     , base >=4.7 && <5
     , bytestring
+    , extra
+    , hedis
     , http-conduit
     , jose
     , lens

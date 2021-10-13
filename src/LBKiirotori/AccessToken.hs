@@ -1,5 +1,5 @@
 module LBKiirotori.AccessToken (
-    LineReqResp
+    LineReqResp (..)
   , reqAccessToken
 ) where
 

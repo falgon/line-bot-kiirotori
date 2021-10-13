@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.AccessToken.Core (
-    LineReqResp
+    LineReqResp (..)
   , reqAccessToken
 ) where
 

@@ -2,67 +2,64 @@
 module LBKiirotori.AccessToken.Redis (
     newConn
   , writeToken
+  , takeToken
   , takeValidToken
   , AccessToken (..)
 ) where
 
-import           Control.Arrow                ((|||))
-import           Control.Exception.Safe       (MonadThrow (..), throw,
-                                               throwString)
-import           Control.Monad                (void)
-import           Control.Monad.Extra          (ifM)
-import           Control.Monad.IO.Class       (MonadIO (..))
-import qualified Data.ByteString.UTF8         as BS
-import           Data.Maybe                   (catMaybes)
-import           Data.String                  (IsString (..))
-import qualified Data.Text                    as T
-import qualified Data.Text.Encoding           as T
-import           Data.Time.Clock              (UTCTime, addUTCTime,
-                                               getCurrentTime)
-import           Data.Time.Clock.POSIX        (posixSecondsToUTCTime,
-                                               utcTimeToPOSIXSeconds)
-import           Data.Time.Format             (defaultTimeLocale, formatTime,
-                                               rfc822DateFormat)
-import           Data.Time.LocalTime          (TimeZone (..),
-                                               getCurrentTimeZone,
-                                               utcToLocalTime)
-import           Database.Redis               (Connection, checkedConnect,
-                                               defaultConnectInfo, hmget, hmset,
-                                               runRedis)
-import           Text.Read                    (readEither)
+import           Control.Arrow                  ((|||))
+import           Control.Exception.Safe         (MonadThrow (..), throw,
+                                                 throwString)
+import           Control.Monad                  (void)
+import           Control.Monad.Extra            (ifM)
+import           Control.Monad.IO.Class         (MonadIO (..))
+import qualified Data.ByteString.UTF8           as BS
+import           Data.Functor                   (($>))
+import           Data.Maybe                     (catMaybes)
+import           Data.String                    (IsString (..))
+import qualified Data.Text                      as T
+import qualified Data.Text.Encoding             as T
+import           Data.Time.Clock                (UTCTime, addUTCTime,
+                                                 getCurrentTime)
+import           Data.Time.Clock.POSIX          (posixSecondsToUTCTime,
+                                                 utcTimeToPOSIXSeconds)
+import           Data.Time.Format               (defaultTimeLocale, formatTime,
+                                                 rfc822DateFormat)
+import           Data.Time.LocalTime            (TimeZone (..),
+                                                 getCurrentTimeZone,
+                                                 utcToLocalTime)
+import           Database.Redis                 (Connection, checkedConnect,
+                                                 defaultConnectInfo, hmget,
+                                                 hmset, runRedis)
+import           Text.Read                      (readEither)
 
-import           LBKiirotori.AccessToken.Core (LineIssueChannelResp (..))
+import           LBKiirotori.AccessToken.Config (AccessToken (..))
+import           LBKiirotori.AccessToken.Core   (LineIssueChannelResp (..))
 
 newConn :: MonadIO m => m Connection
 newConn = liftIO $ checkedConnect defaultConnectInfo
-
-data AccessToken = AccessToken {
-    atKeyId     :: T.Text
-  , atToken     :: BS.ByteString
-  , atExpiresIn :: UTCTime
-  } deriving Show
 
 writeToken :: MonadIO m
     => Connection
     -> UTCTime
     -> LineIssueChannelResp
     -> m AccessToken
-writeToken conn currentTime reqResp = liftIO $ runRedis conn $ do
-    z <- liftIO getCurrentTimeZone
-    liftIO $ putStrLn
-        $ mappend "register token expired at: "
-        $ formatTime defaultTimeLocale rfc822DateFormat
-        $ utcToLocalTime z expiredTime
-    void $ hmset "tokens" [
-        ("expiredtime", fromString $ show val)
-      , ("token", fromString $ T.unpack $ accessToken reqResp)
-      , ("kid", fromString $ T.unpack $ keyID reqResp)
-      ]
-    pure $ AccessToken {
-        atKeyId = keyID reqResp
-      , atToken = fromString $ T.unpack $ accessToken reqResp
-      , atExpiresIn = expiredTime
-      }
+writeToken conn currentTime reqResp = liftIO $ runRedis conn $
+    liftIO getCurrentTimeZone
+        >>= liftIO . putStrLn
+            . mappend "register token expired at: "
+            . formatTime defaultTimeLocale rfc822DateFormat
+            . flip utcToLocalTime expiredTime
+        >> void (hmset "tokens" [
+            ("expiredtime", fromString $ show val)
+          , ("token", fromString $ T.unpack $ accessToken reqResp)
+          , ("kid", fromString $ T.unpack $ keyID reqResp)
+          ])
+        $> AccessToken {
+            atKeyId = keyID reqResp
+          , atToken = fromString $ T.unpack $ accessToken reqResp
+          , atExpiresIn = expiredTime
+          }
     where
         expiredTime = addUTCTime (fromIntegral $ expiresIn reqResp) currentTime
         val = realToFrac $ utcTimeToPOSIXSeconds expiredTime

@@ -34,6 +34,8 @@ dependencies:
 - mtl
 - hedis
 - extra
+- monad-parallel
+- scientific
 
 library:
   source-dirs: src

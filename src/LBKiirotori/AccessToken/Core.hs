@@ -4,23 +4,28 @@ module LBKiirotori.AccessToken.Core (
   , LineAllValidCATKIdsResp  (..)
   , reqAccessToken
   , reqAllValidCATKIds
+  , reqRevokeChannelAccess
 ) where
 
-import           LBKiirotori.AccessToken.JWT (getJwt)
-
-import           Control.Arrow               ((|||))
-import           Control.Exception.Safe      (MonadThrow (..), throw,
-                                              throwString)
-import           Control.Monad.Error.Class   (MonadError)
-import           Control.Monad.IO.Class      (MonadIO (..))
-import           Crypto.JWT                  (AsError, MonadRandom, SignedJWT,
-                                              encodeCompact)
+import           Control.Arrow                  ((|||))
+import           Control.Exception.Safe         (MonadThrow (..), throw,
+                                                 throwString)
+import           Control.Monad.Error.Class      (MonadError)
+import           Control.Monad.IO.Class         (MonadIO (..))
+import           Control.Monad.Parallel         (MonadParallel)
+import           Crypto.JWT                     (AsError, MonadRandom,
+                                                 SignedJWT, encodeCompact)
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.ByteString.Lazy        as BL
-import qualified Data.Text                   as T
-import           Data.Word                   (Word32)
+import qualified Data.ByteString                as BS
+import qualified Data.ByteString.Lazy           as BL
+import           Data.Scientific                (Scientific)
+import qualified Data.Text                      as T
+import           Data.Word                      (Word32)
 import           Network.HTTP.Simple
+
+import           LBKiirotori.AccessToken.Config (AccessToken (..))
+import           LBKiirotori.AccessToken.JWT    (getJwt)
 
 data LineIssueChannelResp = LineIssueChannelResp {
     accessToken :: T.Text
@@ -60,12 +65,6 @@ instance FromJSON LineReqErrResp where
     parseJSON invalid = prependFailure "parsing LineReqErrResp failed, "
         $ typeMismatch "Object" invalid
 
-lineReqOauth2TokenEndpoint :: String
-lineReqOauth2TokenEndpoint = "https://api.line.me/oauth2/v2.1/token"
-
-lineReqOauth2ValidTokenEndpoint :: String
-lineReqOauth2ValidTokenEndpoint = "https://api.line.me/oauth2/v2.1/tokens/kid"
-
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#issue-channel-access-token-v2-1
 reqIssueChannelParam :: SignedJWT -> Request
 reqIssueChannelParam jwt = setRequestBodyURLEncoded dataURLEncode
@@ -76,6 +75,7 @@ reqIssueChannelParam jwt = setRequestBodyURLEncoded dataURLEncode
           , ("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
           , ("client_assertion", BL.toStrict $ encodeCompact jwt)
           ]
+        lineReqOauth2TokenEndpoint = "https://api.line.me/oauth2/v2.1/token"
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#verfiy-channel-access-token-v2-1
 reqAllValidCATKIdsParam :: SignedJWT -> Request
@@ -87,6 +87,21 @@ reqAllValidCATKIdsParam jwt = setRequestMethod "GET"
             ("client_assertion_type", Just "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
           , ("client_assertion", Just $ BL.toStrict $ encodeCompact jwt)
           ]
+        lineReqOauth2ValidTokenEndpoint = "https://api.line.me/oauth2/v2.1/tokens/kid"
+
+reqRevokeChannelAccessToken :: AccessToken
+    -> BS.ByteString
+    -> BS.ByteString
+    -> Request
+reqRevokeChannelAccessToken tk cID cSecret = setRequestBodyURLEncoded dataURLEncode
+    $ parseRequest_ lineReqOauth2RevokeEndpoint
+    where
+        dataURLEncode = [
+            ("client_id", cID)
+          , ("client_secret", cSecret)
+          , ("access_token", atToken tk)
+          ]
+        lineReqOauth2RevokeEndpoint = "https://api.line.me/oauth2/v2.1/revoke"
 
 sendReq :: (MonadThrow m, MonadIO m, FromJSON a)
     => Request
@@ -99,10 +114,26 @@ sendReq req = do
         (throwString ||| pure $ eitherDecode $ getResponseBody resp)
             >>= throwString . (show :: LineReqErrResp -> String)
 
-reqAccessToken :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
-    => m LineIssueChannelResp
-reqAccessToken = getJwt 10 >>= sendReq . reqIssueChannelParam
+tokenLimSeconds :: Scientific
+tokenLimSeconds = 10 * 60 -- 10 minutes
 
-reqAllValidCATKIds :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
+reqAccessToken :: (AsError e, MonadParallel m, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
+    => m LineIssueChannelResp
+reqAccessToken = getJwt tokenLimSeconds >>= sendReq . reqIssueChannelParam
+
+reqAllValidCATKIds :: (AsError e, MonadParallel m, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
     => m LineAllValidCATKIdsResp
-reqAllValidCATKIds = getJwt 10 >>= sendReq . reqAllValidCATKIdsParam
+reqAllValidCATKIds = getJwt tokenLimSeconds >>= sendReq . reqAllValidCATKIdsParam
+
+reqRevokeChannelAccess :: (MonadThrow m, MonadIO m)
+    => AccessToken
+    -> BS.ByteString
+    -> BS.ByteString
+    -> m ()
+reqRevokeChannelAccess tk cID cSecret = do
+    resp <- liftIO $ httpLBS $ reqRevokeChannelAccessToken tk cID cSecret
+    if getResponseStatusCode resp == 200 then pure ()
+    else
+        (throwString ||| pure $ eitherDecode $ getResponseBody resp)
+            >>= throwString . (show :: LineReqErrResp -> String)
+

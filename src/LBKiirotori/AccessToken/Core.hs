@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.AccessToken.Core (
-    LineReqResp (..)
+    LineIssueChannelResp (..)
+  , LineAllValidCATKIdsResp  (..)
   , reqAccessToken
+  , reqAllValidCATKIds
 ) where
 
 import           LBKiirotori.AccessToken.JWT (getJwt)
@@ -20,11 +22,15 @@ import qualified Data.Text                   as T
 import           Data.Word                   (Word32)
 import           Network.HTTP.Simple
 
-data LineReqResp = LineReqResp {
+data LineIssueChannelResp = LineIssueChannelResp {
     accessToken :: T.Text
   , tokenType   :: T.Text
   , expiresIn   :: Word32
   , keyID       :: T.Text
+  } deriving Show
+
+newtype LineAllValidCATKIdsResp = LineAllValidCATKIdsResp {
+    verifiedKIds :: [T.Text]
   } deriving Show
 
 data LineReqErrResp = LineReqErrResp {
@@ -32,13 +38,19 @@ data LineReqErrResp = LineReqErrResp {
   , lineReqErrorDescription :: String
   } deriving Show
 
-instance FromJSON LineReqResp where
-    parseJSON (Object v) = LineReqResp
+instance FromJSON LineIssueChannelResp where
+    parseJSON (Object v) = LineIssueChannelResp
         <$> v .: "access_token"
         <*> v .: "token_type"
         <*> v .: "expires_in"
         <*> v .: "key_id"
-    parseJSON invalid = prependFailure "parsing LineReqResp failed, "
+    parseJSON invalid = prependFailure "parsing LineIssueChannelResp failed, "
+        $ typeMismatch "Object" invalid
+
+instance FromJSON LineAllValidCATKIdsResp where
+    parseJSON (Object v) = LineAllValidCATKIdsResp
+        <$> v .: "kids"
+    parseJSON invalid = prependFailure "parsing LineAllValidCATKIdsResp failed, "
         $ typeMismatch "Object" invalid
 
 instance FromJSON LineReqErrResp where
@@ -48,13 +60,16 @@ instance FromJSON LineReqErrResp where
     parseJSON invalid = prependFailure "parsing LineReqErrResp failed, "
         $ typeMismatch "Object" invalid
 
-lineReqEndPoint :: String
-lineReqEndPoint = "https://api.line.me/oauth2/v2.1/token"
+lineReqOauth2TokenEndpoint :: String
+lineReqOauth2TokenEndpoint = "https://api.line.me/oauth2/v2.1/token"
+
+lineReqOauth2ValidTokenEndpoint :: String
+lineReqOauth2ValidTokenEndpoint = "https://api.line.me/oauth2/v2.1/tokens/kid"
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#issue-channel-access-token-v2-1
-reqParam :: SignedJWT -> Request
-reqParam jwt = setRequestBodyURLEncoded dataURLEncode
-    $ parseRequest_ lineReqEndPoint
+reqIssueChannelParam :: SignedJWT -> Request
+reqIssueChannelParam jwt = setRequestBodyURLEncoded dataURLEncode
+    $ parseRequest_ lineReqOauth2TokenEndpoint
     where
         dataURLEncode = [
             ("grant_type", "client_credentials")
@@ -62,8 +77,21 @@ reqParam jwt = setRequestBodyURLEncoded dataURLEncode
           , ("client_assertion", BL.toStrict $ encodeCompact jwt)
           ]
 
-postHTTPLBS :: (MonadThrow m, MonadIO m) => Request -> m LineReqResp
-postHTTPLBS req = do
+-- c.f. https://developers.line.biz/ja/reference/messaging-api/#verfiy-channel-access-token-v2-1
+reqAllValidCATKIdsParam :: SignedJWT -> Request
+reqAllValidCATKIdsParam jwt = setRequestMethod "GET"
+    $ setRequestQueryString q
+    $ parseRequest_ lineReqOauth2ValidTokenEndpoint
+    where
+        q = [
+            ("client_assertion_type", Just "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
+          , ("client_assertion", Just $ BL.toStrict $ encodeCompact jwt)
+          ]
+
+sendReq :: (MonadThrow m, MonadIO m, FromJSON a)
+    => Request
+    -> m a
+sendReq req = do
     resp <- liftIO $ httpLBS req
     if getResponseStatusCode resp == 200 then
         throwString ||| pure $ eitherDecode $ getResponseBody resp
@@ -71,5 +99,10 @@ postHTTPLBS req = do
         (throwString ||| pure $ eitherDecode $ getResponseBody resp)
             >>= throwString . (show :: LineReqErrResp -> String)
 
-reqAccessToken :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m) => m LineReqResp
-reqAccessToken = getJwt 10 >>= postHTTPLBS . reqParam
+reqAccessToken :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
+    => m LineIssueChannelResp
+reqAccessToken = getJwt 10 >>= sendReq . reqIssueChannelParam
+
+reqAllValidCATKIds :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
+    => m LineAllValidCATKIdsResp
+reqAllValidCATKIds = getJwt 10 >>= sendReq . reqAllValidCATKIdsParam

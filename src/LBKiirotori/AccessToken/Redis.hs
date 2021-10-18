@@ -25,7 +25,7 @@ import           Database.Redis               (Connection, checkedConnect,
                                                runRedis)
 import           Text.Read                    (readEither)
 
-import           LBKiirotori.AccessToken.Core (LineReqResp (..))
+import           LBKiirotori.AccessToken.Core (LineIssueChannelResp (..))
 
 import           Data.Time.Format             (defaultTimeLocale, formatTime,
                                                rfc822DateFormat)
@@ -39,7 +39,7 @@ newConn = liftIO $ checkedConnect defaultConnectInfo
 writeToken :: MonadIO m
     => Connection
     -> UTCTime
-    -> LineReqResp
+    -> LineIssueChannelResp
     -> m ()
 writeToken conn currentTime reqResp = liftIO $ runRedis conn $ do
     z <- liftIO getCurrentTimeZone
@@ -60,7 +60,6 @@ takeToken :: (MonadThrow m, MonadIO m)
     -> m (Maybe (UTCTime, BS.ByteString))
 takeToken conn = liftIO $ runRedis conn $ do
     x <- hmget "tokens" ["expiredtime", "token"] >>= fail . show ||| pure
-    liftIO $ print x
     if length x == 2 then let x' = catMaybes x in
         if length x' == 2 then
             Just . (, x' !! 1) . doubleToUTCTime <$> (fail ||| pure) (readEither $ BS.toString $ head x')

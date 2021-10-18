@@ -2,6 +2,8 @@
 module LBKiirotori.AccessToken (
     getAccessToken
   , getAccessTokenIO
+  , getValidAccessTokenKIds
+  , getValidAccessTokenKIdsIO
   , newConn
 ) where
 
@@ -28,7 +30,7 @@ getAccessToken :: forall m e. (AsError e, MonadThrow m, MonadRandom m, MonadIO m
 getAccessToken conn = takeValidToken conn >>= \case
     Just tk -> pure tk
     Nothing -> do
-        r <- (runExceptT reqAccessToken :: m (Either JWTError LineReqResp))
+        r <- (runExceptT reqAccessToken :: m (Either JWTError LineIssueChannelResp))
             >>= throwString . show ||| pure
         t <- liftIO getCurrentTime
         writeToken conn t r
@@ -39,3 +41,13 @@ getAccessTokenIO = f >=> throwString . show ||| pure
     where
         f :: Connection -> IO (Either JWTError BS.ByteString)
         f = runExceptT . getAccessToken
+
+getValidAccessTokenKIds :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
+    => m [T.Text]
+getValidAccessTokenKIds = verifiedKIds <$> reqAllValidCATKIds
+
+getValidAccessTokenKIdsIO :: IO [T.Text]
+getValidAccessTokenKIdsIO = f >>= throwString . show ||| pure
+    where
+        f :: IO (Either JWTError [T.Text])
+        f = runExceptT getValidAccessTokenKIds

@@ -1,8 +1,9 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 module LBKiirotori.AccessToken.Redis (
     newConn
   , writeToken
   , takeValidToken
+  , AccessToken (..)
 ) where
 
 import           Control.Arrow                ((|||))
@@ -20,6 +21,11 @@ import           Data.Time.Clock              (UTCTime, addUTCTime,
                                                getCurrentTime)
 import           Data.Time.Clock.POSIX        (posixSecondsToUTCTime,
                                                utcTimeToPOSIXSeconds)
+import           Data.Time.Format             (defaultTimeLocale, formatTime,
+                                               rfc822DateFormat)
+import           Data.Time.LocalTime          (TimeZone (..),
+                                               getCurrentTimeZone,
+                                               utcToLocalTime)
 import           Database.Redis               (Connection, checkedConnect,
                                                defaultConnectInfo, hmget, hmset,
                                                runRedis)
@@ -27,20 +33,20 @@ import           Text.Read                    (readEither)
 
 import           LBKiirotori.AccessToken.Core (LineIssueChannelResp (..))
 
-import           Data.Time.Format             (defaultTimeLocale, formatTime,
-                                               rfc822DateFormat)
-import           Data.Time.LocalTime          (TimeZone (..),
-                                               getCurrentTimeZone,
-                                               utcToLocalTime)
-
 newConn :: MonadIO m => m Connection
 newConn = liftIO $ checkedConnect defaultConnectInfo
+
+data AccessToken = AccessToken {
+    atKeyId     :: T.Text
+  , atToken     :: BS.ByteString
+  , atExpiresIn :: UTCTime
+  } deriving Show
 
 writeToken :: MonadIO m
     => Connection
     -> UTCTime
     -> LineIssueChannelResp
-    -> m ()
+    -> m AccessToken
 writeToken conn currentTime reqResp = liftIO $ runRedis conn $ do
     z <- liftIO getCurrentTimeZone
     liftIO $ putStrLn
@@ -50,19 +56,26 @@ writeToken conn currentTime reqResp = liftIO $ runRedis conn $ do
     void $ hmset "tokens" [
         ("expiredtime", fromString $ show val)
       , ("token", fromString $ T.unpack $ accessToken reqResp)
+      , ("kid", fromString $ T.unpack $ keyID reqResp)
       ]
+    pure $ AccessToken {
+        atKeyId = keyID reqResp
+      , atToken = fromString $ T.unpack $ accessToken reqResp
+      , atExpiresIn = expiredTime
+      }
     where
         expiredTime = addUTCTime (fromIntegral $ expiresIn reqResp) currentTime
         val = realToFrac $ utcTimeToPOSIXSeconds expiredTime
 
 takeToken :: (MonadThrow m, MonadIO m)
     => Connection
-    -> m (Maybe (UTCTime, BS.ByteString))
+    -> m (Maybe AccessToken)
 takeToken conn = liftIO $ runRedis conn $ do
-    x <- hmget "tokens" ["expiredtime", "token"] >>= fail . show ||| pure
-    if length x == 2 then let x' = catMaybes x in
-        if length x' == 2 then
-            Just . (, x' !! 1) . doubleToUTCTime <$> (fail ||| pure) (readEither $ BS.toString $ head x')
+    x <- hmget "tokens" ["expiredtime", "token", "kid"] >>= fail . show ||| pure
+    if length x == 3 then let x' = catMaybes x in
+        if length x' == 3 then
+            Just . AccessToken (T.decodeUtf8 (x' !! 2)) (x' !! 1) . doubleToUTCTime
+                <$> (fail ||| pure) (readEither $ BS.toString $ head x')
         else if null x' then
             pure Nothing
         else corruptFail
@@ -74,10 +87,10 @@ takeToken conn = liftIO $ runRedis conn $ do
 
 takeValidToken :: (MonadThrow m, MonadIO m)
     => Connection
-    -> m (Maybe BS.ByteString)
+    -> m (Maybe AccessToken)
 takeValidToken conn = takeToken conn >>= \case
     Nothing -> pure Nothing
-    Just (et, tk) -> ifM ((<) <$> liftIO getCurrentTime <*> pure et)
+    Just tk -> ifM ((<) <$> liftIO getCurrentTime <*> pure (atExpiresIn tk))
         (pure $ Just tk)
       $ pure Nothing
 

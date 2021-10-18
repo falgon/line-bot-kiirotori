@@ -26,20 +26,19 @@ import           LBKiirotori.AccessToken.Redis
 
 getAccessToken :: forall m e. (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)
     => Connection
-    -> m BS.ByteString
+    -> m AccessToken
 getAccessToken conn = takeValidToken conn >>= \case
     Just tk -> pure tk
     Nothing -> do
         r <- (runExceptT reqAccessToken :: m (Either JWTError LineIssueChannelResp))
             >>= throwString . show ||| pure
-        t <- liftIO getCurrentTime
-        writeToken conn t r
-            $> fromString (T.unpack $ accessToken r)
+        liftIO getCurrentTime
+            >>= flip (writeToken conn) r
 
-getAccessTokenIO :: Connection -> IO BS.ByteString
+getAccessTokenIO :: Connection -> IO AccessToken
 getAccessTokenIO = f >=> throwString . show ||| pure
     where
-        f :: Connection -> IO (Either JWTError BS.ByteString)
+        f :: Connection -> IO (Either JWTError AccessToken)
         f = runExceptT . getAccessToken
 
 getValidAccessTokenKIds :: (AsError e, MonadThrow m, MonadRandom m, MonadIO m, MonadError e m)

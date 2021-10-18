@@ -3,17 +3,19 @@ module LBKiirotori.API.PushMessage (
     pushMessage
 ) where
 
-import           Control.Arrow                ((|||))
-import           Control.Exception.Safe       (Exception, MonadThrow (..),
-                                               throw, throwString)
-import           Control.Monad.IO.Class       (MonadIO (..))
+import           Control.Arrow                 ((|||))
+import           Control.Exception.Safe        (Exception, MonadThrow (..),
+                                                throw, throwString)
+import           Control.Monad.IO.Class        (MonadIO (..))
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.ByteString              as B
-import qualified Data.Text                    as T
-import           Network.HTTP.Conduit         (RequestBody (..), requestHeaders)
+import qualified Data.ByteString               as B
+import qualified Data.Text                     as T
+import           Network.HTTP.Conduit          (RequestBody (..),
+                                                requestHeaders)
 import           Network.HTTP.Simple
 
+import           LBKiirotori.AccessToken.Redis (AccessToken (..))
 import           LBKiirotori.Data.PushMessage
 
 linePushMessageEndPoint :: String
@@ -48,9 +50,9 @@ instance FromJSON PushMessageErrorResp where
 
 instance Exception PushMessageErrorResp
 
-pushMessage :: (MonadThrow m, MonadIO m) => B.ByteString -> PushMessage -> m ()
+pushMessage :: (MonadThrow m, MonadIO m) => AccessToken -> PushMessage -> m ()
 pushMessage token pm = do
-    resp <- httpLbs (reqPushMessage token pm)
+    resp <- httpLbs (reqPushMessage (atToken token) pm)
     if getResponseStatusCode resp == 200 then
         pure ()
     else

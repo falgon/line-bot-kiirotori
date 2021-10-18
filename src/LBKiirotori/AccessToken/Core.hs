@@ -65,7 +65,7 @@ instance FromJSON LineReqErrResp where
     parseJSON invalid = prependFailure "parsing LineReqErrResp failed, "
         $ typeMismatch "Object" invalid
 
--- c.f. https://developers.line.biz/ja/reference/messaging-api/#issue-channel-access-token-v2-1
+-- c.f. https://developers.line.biz/en/reference/messaging-api/#issue-channel-access-token-v2-1
 reqIssueChannelParam :: SignedJWT -> Request
 reqIssueChannelParam jwt = setRequestBodyURLEncoded dataURLEncode
     $ parseRequest_ lineReqOauth2TokenEndpoint
@@ -77,7 +77,7 @@ reqIssueChannelParam jwt = setRequestBodyURLEncoded dataURLEncode
           ]
         lineReqOauth2TokenEndpoint = "https://api.line.me/oauth2/v2.1/token"
 
--- c.f. https://developers.line.biz/ja/reference/messaging-api/#verfiy-channel-access-token-v2-1
+-- c.f. https://developers.line.biz/en/reference/messaging-api/#verfiy-channel-access-token-v2-1
 reqAllValidCATKIdsParam :: SignedJWT -> Request
 reqAllValidCATKIdsParam jwt = setRequestMethod "GET"
     $ setRequestQueryString q
@@ -89,6 +89,7 @@ reqAllValidCATKIdsParam jwt = setRequestMethod "GET"
           ]
         lineReqOauth2ValidTokenEndpoint = "https://api.line.me/oauth2/v2.1/tokens/kid"
 
+-- c.f. https://developers.line.biz/en/reference/messaging-api/#revoke-channel-access-token-v2-1
 reqRevokeChannelAccessToken :: AccessToken
     -> BS.ByteString
     -> BS.ByteString

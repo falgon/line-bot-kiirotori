@@ -47,7 +47,7 @@ writeToken :: MonadIO m
 writeToken conn currentTime reqResp = liftIO $ runRedis conn $
     liftIO getCurrentTimeZone
         >>= liftIO . putStrLn
-            . mappend "register token expired at: "
+            . mappend "Generated a new token that is expired at: "
             . formatTime defaultTimeLocale rfc822DateFormat
             . flip utcToLocalTime expiredTime
         >> void (hmset "tokens" [

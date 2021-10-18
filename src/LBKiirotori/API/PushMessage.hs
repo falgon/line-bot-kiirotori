@@ -56,4 +56,5 @@ pushMessage token pm = do
     if getResponseStatusCode resp == 200 then
         pure ()
     else
-        throwString ||| throw $ (eitherDecode (getResponseBody resp) :: Either String PushMessageErrorResp)
+        throwString ||| throw
+            $ (eitherDecode (getResponseBody resp) :: Either String PushMessageErrorResp)

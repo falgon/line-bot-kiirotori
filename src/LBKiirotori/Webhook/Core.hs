@@ -4,7 +4,6 @@ module LBKiirotori.Webhook.Core (
 ) where
 
 import           Control.Monad.Except                (MonadError (..))
-import           Control.Monad.Extra                 (ifM)
 import           Control.Monad.IO.Class              (MonadIO (..))
 import           Control.Monad.Logger                (LoggingT, logError,
                                                       logInfo,
@@ -31,7 +30,7 @@ import           Servant.Server                      (Application, Handler,
 import           Servant.Server.Internal.ServerError
 
 import           LBKiirotori.AccessToken.Config      (getChannelSecret)
-import           LBKiirotori.Utils                   (tshow)
+import           LBKiirotori.Internal.Utils          (tshow)
 
 type LineSignature = T.Text
 
@@ -94,10 +93,14 @@ mainHandler :: Maybe LineSignature
     -> LineBotHandler T.Text
 mainHandler Nothing body = $(logError) (tshow body)
     >> throwError (err400 { errBody = "invalid request" })
-mainHandler (Just sig) body = ifM ((T.encodeUtf8 sig ==)
-    <$> asks (Base64.encode . flip hmac (BL.toStrict $ encode body) . lbhChannelSecret))
-        (mainHandler' body)
-        (throwError (err400 { errBody = "invalid signature" }))
+mainHandler (Just sig) body = do
+    sig' <- asks (Base64.encode . flip hmac (BL.toStrict $ encode body) . lbhChannelSecret)
+    if sig' == T.encodeUtf8 sig then mainHandler' body else unexpected sig'
+    where
+        unexpected :: B.ByteString -> LineBotHandler T.Text
+        unexpected sig' = $(logError) (tshow body)
+            >> $(logError) ("lhs: " <> T.decodeUtf8 sig' <> ", rhs: " <> sig)
+            >> throwError (err400 { errBody = "invalid signature" })
 
 api :: Proxy API
 api = Proxy

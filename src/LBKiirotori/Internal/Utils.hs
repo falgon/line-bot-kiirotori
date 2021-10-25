@@ -1,4 +1,4 @@
-module LBKiirotori.Utils (
+module LBKiirotori.Internal.Utils (
     tshow
 ) where
 

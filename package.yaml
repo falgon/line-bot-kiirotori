@@ -36,6 +36,14 @@ dependencies:
 - extra
 - monad-parallel
 - scientific
+- servant
+- servant-server
+- warp
+- warp-tls
+- monad-logger
+- base64-bytestring
+- vector
+- cryptohash-sha256
 
 library:
   source-dirs: src

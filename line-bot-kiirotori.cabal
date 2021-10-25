@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e1e694d83784e11367b2921b1992d5d4738059a418c14735bb0be8374e30e89b
+-- hash: abec337fe4634d3f440b2c3da4cb369911e961b4eb8084604b41fa6ba43c9b15
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -36,6 +36,9 @@ library
       LBKiirotori.Data.PushMessage
       LBKiirotori.Data.PushMessage.Core
       LBKiirotori.Internal.Exceptions
+      LBKiirotori.Utils
+      LBKiirotori.Webhook
+      LBKiirotori.Webhook.Core
   other-modules:
       Paths_line_bot_kiirotori
   hs-source-dirs:
@@ -43,20 +46,28 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-sha256
     , extra
     , hedis
     , http-conduit
     , jose
     , lens
+    , monad-logger
     , monad-parallel
     , mtl
     , safe-exceptions
     , scientific
+    , servant
+    , servant-server
     , text
     , time
     , unordered-containers
     , utf8-string
+    , vector
+    , warp
+    , warp-tls
   default-language: Haskell2010
 
 executable line-bot-kiirotori
@@ -69,21 +80,29 @@ executable line-bot-kiirotori
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-sha256
     , extra
     , hedis
     , http-conduit
     , jose
     , lens
     , line-bot-kiirotori
+    , monad-logger
     , monad-parallel
     , mtl
     , safe-exceptions
     , scientific
+    , servant
+    , servant-server
     , text
     , time
     , unordered-containers
     , utf8-string
+    , vector
+    , warp
+    , warp-tls
   default-language: Haskell2010
 
 test-suite line-bot-kiirotori-test
@@ -97,19 +116,27 @@ test-suite line-bot-kiirotori-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-sha256
     , extra
     , hedis
     , http-conduit
     , jose
     , lens
     , line-bot-kiirotori
+    , monad-logger
     , monad-parallel
     , mtl
     , safe-exceptions
     , scientific
+    , servant
+    , servant-server
     , text
     , time
     , unordered-containers
     , utf8-string
+    , vector
+    , warp
+    , warp-tls
   default-language: Haskell2010

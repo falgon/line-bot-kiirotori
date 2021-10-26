@@ -17,11 +17,10 @@ import           System.Environment           (getEnv)
 -}
 
 import           LBKiirotori.Webhook         (kiirotoriApp)
-import           Network.Wai.Handler.Warp    (defaultSettings, setPort)
-import           Network.Wai.Handler.WarpTLS (runTLS, tlsSettings)
+import           Network.Wai.Handler.Warp    (run)
 
 main :: IO ()
-main = runTLS (tlsSettings "server.crt" "server.key") (setPort 48080 defaultSettings) kiirotoriApp
+main = run 48080 kiirotoriApp
 
 {-
     conn <- newConn

@@ -61,12 +61,12 @@ data LineWebhookRequestBody = LineWebhookRequestBody {
 
 instance FromJSON LineWebhookRequestBody where
     parseJSON (Object v) = LineWebhookRequestBody
-        <$> v .: "description"
+        <$> v .: "destination"
         <*> v .: "events"
 
 instance ToJSON LineWebhookRequestBody where
     toJSON v = Object $ HM.fromList [
-        ("description", String $ lineWHRBDst v)
+        ("destination", String $ lineWHRBDst v)
       , ("events", toJSON $ lineWHRBEvents v)
       ]
 

@@ -31,27 +31,9 @@ import           Servant.Server.Internal.ServerError
 
 import           LBKiirotori.AccessToken.Config      (getChannelSecret)
 import           LBKiirotori.Internal.Utils          (tshow)
+import           LBKiirotori.Webhook.EventObject
 
 type LineSignature = T.Text
-
--- c.f. https://developers.line.biz/ja/reference/messaging-api/#webhook-event-objects
-data LineEventObject = LineEventObject {
-    lineEventType :: T.Text
-  , lineEventMode :: T.Text
-  } deriving Show
-
-instance FromJSON LineEventObject where
-    parseJSON (Object v) = LineEventObject
-        <$> v .: "type"
-        <*> v .: "mode"
-    parseJSON invalid = prependFailure "parsing LineEventObject failed, "
-        $ typeMismatch "Object" invalid
-
-instance ToJSON LineEventObject where
-    toJSON v = Object $ HM.fromList [
-        ("type", String $ lineEventType v)
-      , ("mode", String $ lineEventMode v)
-      ]
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
 data LineWebhookRequestBody = LineWebhookRequestBody {

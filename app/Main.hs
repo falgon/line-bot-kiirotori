@@ -16,8 +16,8 @@ import           Database.Redis               (Connection)
 import           System.Environment           (getEnv)
 -}
 
-import           LBKiirotori.Webhook         (kiirotoriApp)
-import           Network.Wai.Handler.Warp    (run)
+import           LBKiirotori.Webhook      (kiirotoriApp)
+import           Network.Wai.Handler.Warp (run)
 
 main :: IO ()
 main = run 48080 kiirotoriApp

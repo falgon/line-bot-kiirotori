@@ -3,6 +3,7 @@ module LBKiirotori.Webhook.Core (
     kiirotoriApp
 ) where
 
+import           Control.Arrow                       ((|||))
 import           Control.Monad.Except                (MonadError (..))
 import           Control.Monad.IO.Class              (MonadIO (..))
 import           Control.Monad.Logger                (LoggingT, logError,
@@ -35,6 +36,7 @@ import           LBKiirotori.Webhook.EventObject
 
 type LineSignature = T.Text
 
+
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
 data LineWebhookRequestBody = LineWebhookRequestBody {
     lineWHRBDst    :: T.Text
@@ -53,10 +55,11 @@ instance ToJSON LineWebhookRequestBody where
       ]
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-headers
+-- Holds the raw string once because it requires hmac encoding
 type API = "linebot"
     :> "webhook"
     :> Header "x-line-signature" LineSignature
-    :> ReqBody '[JSON] LineWebhookRequestBody
+    :> ReqBody '[JSON] T.Text
     :> Post '[PlainText] T.Text
 
 newtype LineBotHandlerConfig = LineBotHandlerConfig {
@@ -71,25 +74,32 @@ mainHandler' body = $(logInfo) (tshow body)
     $> tshow body
 
 mainHandler :: Maybe LineSignature
-    -> LineWebhookRequestBody
+    -> T.Text
     -> LineBotHandler T.Text
-mainHandler Nothing body = $(logError) (tshow body)
+mainHandler Nothing body = $(logError) body
     >> throwError (err400 { errBody = "invalid request" })
 mainHandler (Just sig) body = do
-    sig' <- asks (Base64.encode . flip hmac (BL.toStrict $ encode body) . lbhChannelSecret)
-    if sig' == T.encodeUtf8 sig then mainHandler' body else unexpected sig'
+    sig' <- asks (Base64.encode . flip hmac (T.encodeUtf8 body) . lbhChannelSecret)
+    if sig' == T.encodeUtf8 sig then
+        (unexpectedDecode ||| pure) (eitherDecode' $ BL.fromStrict $ T.encodeUtf8 body)
+            >>= mainHandler'
+    else unexpectedSig sig'
     where
-        unexpected :: B.ByteString -> LineBotHandler T.Text
-        unexpected sig' = $(logError) (tshow body)
+        unexpectedDecode :: String -> LineBotHandler a
+        unexpectedDecode s = $(logError) (tshow body)
+            >> throwError (err400 { errBody = fromString s })
+
+        unexpectedSig :: B.ByteString -> LineBotHandler a
+        unexpectedSig sig' = $(logError) (tshow body)
             >> $(logError) ("lhs: " <> T.decodeUtf8 sig' <> ", rhs: " <> sig)
             >> throwError (err400 { errBody = "invalid signature" })
 
 api :: Proxy API
 api = Proxy
 
-loggingServer :: (Maybe LineSignature -> LineWebhookRequestBody -> LineBotHandler T.Text)
+loggingServer :: (Maybe LineSignature -> T.Text -> LineBotHandler T.Text)
     -> Maybe LineSignature
-    -> LineWebhookRequestBody
+    -> T.Text
     -> Handler T.Text
 loggingServer f s b = do
     cfg <- liftIO $ LineBotHandlerConfig <$> getChannelSecret

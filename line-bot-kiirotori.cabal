@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4fd8f6af5de888abcc5b4aa3a95facab5561fa94fc93ab8a4f06c0713f775e40
+-- hash: 12592c22d6529cab308a716dacbfe7ee09d451cffd6f845800d2b74fa172ce7b
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -32,19 +32,24 @@ library
       LBKiirotori.AccessToken.Core
       LBKiirotori.AccessToken.JWT
       LBKiirotori.AccessToken.Redis
+      LBKiirotori.API.MessageErrorResp
       LBKiirotori.API.PushMessage
-      LBKiirotori.Data.PushMessage
-      LBKiirotori.Data.PushMessage.Core
+      LBKiirotori.API.ReplyMessage
+      LBKiirotori.Data.MessageObject
       LBKiirotori.Internal.Exceptions
+      LBKiirotori.Internal.HTTP
       LBKiirotori.Internal.Utils
       LBKiirotori.Webhook
       LBKiirotori.Webhook.Core
+      LBKiirotori.Webhook.EventHandlers
+      LBKiirotori.Webhook.EventHandlers.Join
       LBKiirotori.Webhook.EventObject
       LBKiirotori.Webhook.EventObject.Core
       LBKiirotori.Webhook.EventObject.EventMessage
       LBKiirotori.Webhook.EventObject.EventMode
       LBKiirotori.Webhook.EventObject.EventSource
       LBKiirotori.Webhook.EventObject.EventType
+      LBKiirotori.Webhook.EventObject.LineBotHandler
   other-modules:
       Paths_line_bot_kiirotori
   hs-source-dirs:

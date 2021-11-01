@@ -4,43 +4,52 @@ module LBKiirotori.Webhook.Core (
     kiirotoriApp
 ) where
 
-import           Control.Arrow                       ((|||))
-import           Control.Monad.Except                (MonadError (..))
-import           Control.Monad.IO.Class              (MonadIO (..))
-import           Control.Monad.Logger                (LoggingT, logError,
-                                                      logInfo,
-                                                      runStdoutLoggingT)
-import           Control.Monad.Reader                (ReaderT (..), asks)
-import           Crypto.Hash.SHA256                  (hmac)
+import           Control.Arrow                                  ((|||))
+import           Control.Monad                                  (forM_)
+import           Control.Monad.Except                           (MonadError (..))
+import           Control.Monad.IO.Class                         (MonadIO (..))
+import           Control.Monad.Logger                           (LoggingT,
+                                                                 logError,
+                                                                 logInfo,
+                                                                 runStdoutLoggingT)
+import           Control.Monad.Reader                           (ReaderT (..),
+                                                                 asks)
+import           Crypto.Hash.SHA256                             (hmac)
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.ByteString                     as B
-import qualified Data.ByteString.Base64              as Base64
-import qualified Data.ByteString.Lazy                as BL
-import qualified Data.ByteString.Lazy                as BL
-import           Data.Functor                        (($>))
-import qualified Data.HashMap.Strict                 as HM
-import qualified Data.List.NonEmpty                  as NE
-import           Data.String                         (IsString (..))
-import qualified Data.Text                           as T
-import qualified Data.Text.Encoding                  as T
-import qualified Data.Vector                         as V
-import qualified Network.HTTP.Media                  as M
-import           Servant                             (Header, JSON,
-                                                      MimeRender (..),
-                                                      MimeUnrender (..),
-                                                      PlainText, Post,
-                                                      Proxy (..), ReqBody,
-                                                      type (:>))
-import           Servant.API.ContentTypes            (Accept (..))
-import           Servant.Server                      (Application, Handler,
-                                                      Server, hoistServer,
-                                                      serve)
+import qualified Data.ByteString                                as B
+import qualified Data.ByteString.Base64                         as Base64
+import qualified Data.ByteString.Lazy                           as BL
+import           Data.Functor                                   (($>))
+import qualified Data.HashMap.Strict                            as HM
+import qualified Data.List.NonEmpty                             as NE
+import           Data.String                                    (IsString (..))
+import qualified Data.Text                                      as T
+import qualified Data.Text.Encoding                             as T
+import qualified Data.Vector                                    as V
+import qualified Network.HTTP.Media                             as M
+import           Servant                                        (Header, JSON,
+                                                                 MimeRender (..),
+                                                                 MimeUnrender (..),
+                                                                 PlainText,
+                                                                 Post,
+                                                                 Proxy (..),
+                                                                 ReqBody,
+                                                                 type (:>))
+import           Servant.API.ContentTypes                       (Accept (..))
+import           Servant.Server                                 (Application,
+                                                                 Handler,
+                                                                 Server,
+                                                                 hoistServer,
+                                                                 serve)
 import           Servant.Server.Internal.ServerError
 
-import           LBKiirotori.AccessToken.Config      (getChannelSecret)
-import           LBKiirotori.Internal.Utils          (tshow)
+import           LBKiirotori.AccessToken.Config                 (getChannelSecret)
+import           LBKiirotori.AccessToken.Redis                  (newConn)
+import           LBKiirotori.Internal.Utils                     (tshow)
+import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
+import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
 type LineSignature = T.Text
 
@@ -76,7 +85,7 @@ instance MimeRender WebhookJSON B.ByteString where
     mimeRender _ = BL.fromStrict
 
 instance MimeUnrender WebhookJSON BL.ByteString where
-    mimeUnrender _ = Right . id
+    mimeUnrender _ = Right
 
 instance MimeUnrender WebhookJSON B.ByteString where
     mimeUnrender _ = Right . BL.toStrict
@@ -88,16 +97,15 @@ type API = "linebot"
     :> ReqBody '[WebhookJSON] B.ByteString
     :> Post '[PlainText] T.Text
 
-newtype LineBotHandlerConfig = LineBotHandlerConfig {
-    lbhChannelSecret :: B.ByteString
-  } deriving Show
-
-type LineBotHandler = ReaderT LineBotHandlerConfig (LoggingT Handler)
+eventHandler :: LineEventObject
+    -> LineBotHandler ()
+eventHandler e
+    | lineEventType e == LineEventTypeJoin = joinEvent e
+    | otherwise = $(logInfo) (tshow e)
 
 mainHandler' :: LineWebhookRequestBody
     -> LineBotHandler T.Text
-mainHandler' body = $(logInfo) (tshow body)
-    $> mempty
+mainHandler' (LineWebhookRequestBody _ events) = mapM_ eventHandler events $> mempty
 
 mainHandler :: Maybe LineSignature
     -> B.ByteString
@@ -129,7 +137,9 @@ loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
     -> B.ByteString
     -> Handler T.Text
 loggingServer f s b = do
-    cfg <- liftIO $ LineBotHandlerConfig <$> getChannelSecret
+    cfg <- liftIO $ LineBotHandlerConfig
+        <$> getChannelSecret
+        <*> newConn
     hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
 
 server :: Server API

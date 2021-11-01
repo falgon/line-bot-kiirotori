@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
-module LBKiirotori.API.PushMessage (
-    pushMessage
+module LBKiirotori.API.ReplyMessage (
+    ReplyMessage (..)
+  , replyMessage
 ) where
 
 import           Control.Arrow                    ((|||))
@@ -20,20 +21,23 @@ import           LBKiirotori.AccessToken.Redis    (AccessToken (..))
 import           LBKiirotori.API.MessageErrorResp
 import           LBKiirotori.Data.MessageObject
 import           LBKiirotori.Internal.HTTP
+import           LBKiirotori.Internal.Utils       (stripFirstToLowerLabeledOption)
 
-reqPushMessage :: B.ByteString -> PushMessage ->  Request
-reqPushMessage = reqMessage "https://api.line.me/v2/bot/message/push"
+data ReplyMessage = ReplyMessage {
+    replyMessageReplyToken           :: T.Text
+  , replyMessageMessages             :: Messages
+  , replyMessageNotificationDisabled :: Maybe Bool
+  } deriving (Eq, Show, Generic)
 
-data PushMessage = PushMessage {
-    to       :: T.Text
-  , messages :: Messages
-  } deriving (Show, Generic)
+instance ToJSON ReplyMessage where
+    toJSON = genericToJSON $ stripFirstToLowerLabeledOption 12
 
-instance ToJSON PushMessage
+reqReplyMessage :: B.ByteString -> ReplyMessage ->  Request
+reqReplyMessage = reqMessage "https://api.line.me/v2/bot/message/reply"
 
-pushMessage :: (MonadThrow m, MonadIO m) => AccessToken -> PushMessage -> m ()
-pushMessage token pm = do
-    resp <- httpLbs (reqPushMessage (atToken token) pm)
+replyMessage :: (MonadThrow m, MonadIO m) => B.ByteString -> ReplyMessage -> m ()
+replyMessage token pm = do
+    resp <- httpLbs (reqReplyMessage token pm)
     if getResponseStatusCode resp == 200 then
         pure ()
     else

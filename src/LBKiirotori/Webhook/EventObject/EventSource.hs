@@ -29,7 +29,7 @@ instance ToJSON LineEventSourceType where
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#webhook-event-objects
 data LineEventSource = LineEventSource {
     lineEventSrcType    :: LineEventSourceType
-  , lineEventSrcUserId  :: T.Text
+  , lineEventSrcUserId  :: Maybe T.Text
   , lineEventSrcGroupId :: Maybe T.Text
   , lineEventSrcRoomId  :: Maybe T.Text
   } deriving (Eq, Show)
@@ -37,7 +37,7 @@ data LineEventSource = LineEventSource {
 instance FromJSON LineEventSource where
     parseJSON (Object v) = LineEventSource
         <$> v .: "type"
-        <*> v .: "userId"
+        <*> v .:? "userId"
         <*> v .:? "groupId"
         <*> v .:? "roomId"
     parseJSON invalid = prependFailure "parsing LineEventSource failed, "

@@ -1,4 +1,5 @@
-{-# LANGUAGE DataKinds, OverloadedStrings, TemplateHaskell, TypeOperators #-}
+{-# LANGUAGE DataKinds, MultiParamTypeClasses, OverloadedStrings,
+             TemplateHaskell, TypeOperators #-}
 module LBKiirotori.Webhook.Core (
     kiirotoriApp
 ) where
@@ -16,15 +17,22 @@ import           Data.Aeson.Types
 import qualified Data.ByteString                     as B
 import qualified Data.ByteString.Base64              as Base64
 import qualified Data.ByteString.Lazy                as BL
+import qualified Data.ByteString.Lazy                as BL
 import           Data.Functor                        (($>))
 import qualified Data.HashMap.Strict                 as HM
+import qualified Data.List.NonEmpty                  as NE
 import           Data.String                         (IsString (..))
 import qualified Data.Text                           as T
 import qualified Data.Text.Encoding                  as T
 import qualified Data.Vector                         as V
-import           Servant                             (Header, JSON, PlainText,
-                                                      Post, Proxy (..), ReqBody,
+import qualified Network.HTTP.Media                  as M
+import           Servant                             (Header, JSON,
+                                                      MimeRender (..),
+                                                      MimeUnrender (..),
+                                                      PlainText, Post,
+                                                      Proxy (..), ReqBody,
                                                       type (:>))
+import           Servant.API.ContentTypes            (Accept (..))
 import           Servant.Server                      (Application, Handler,
                                                       Server, hoistServer,
                                                       serve)
@@ -35,7 +43,6 @@ import           LBKiirotori.Internal.Utils          (tshow)
 import           LBKiirotori.Webhook.EventObject
 
 type LineSignature = T.Text
-
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
 data LineWebhookRequestBody = LineWebhookRequestBody {
@@ -54,12 +61,31 @@ instance ToJSON LineWebhookRequestBody where
       , ("events", toJSON $ lineWHRBEvents v)
       ]
 
--- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-headers
 -- Holds the raw string once because it requires hmac encoding
+data WebhookJSON
+
+instance Accept WebhookJSON where
+    contentTypes _ =
+        "application" M.// "json" M./: ("charset", "utf-8") NE.:|
+        [ "application" M.// "json" ]
+
+instance MimeRender WebhookJSON BL.ByteString where
+    mimeRender _ = id
+
+instance MimeRender WebhookJSON B.ByteString where
+    mimeRender _ = BL.fromStrict
+
+instance MimeUnrender WebhookJSON BL.ByteString where
+    mimeUnrender _ = Right . id
+
+instance MimeUnrender WebhookJSON B.ByteString where
+    mimeUnrender _ = Right . BL.toStrict
+
+-- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-headers
 type API = "linebot"
     :> "webhook"
     :> Header "x-line-signature" LineSignature
-    :> ReqBody '[JSON] T.Text
+    :> ReqBody '[WebhookJSON] B.ByteString
     :> Post '[PlainText] T.Text
 
 newtype LineBotHandlerConfig = LineBotHandlerConfig {
@@ -71,17 +97,17 @@ type LineBotHandler = ReaderT LineBotHandlerConfig (LoggingT Handler)
 mainHandler' :: LineWebhookRequestBody
     -> LineBotHandler T.Text
 mainHandler' body = $(logInfo) (tshow body)
-    $> tshow body
+    $> mempty
 
 mainHandler :: Maybe LineSignature
-    -> T.Text
+    -> B.ByteString
     -> LineBotHandler T.Text
-mainHandler Nothing body = $(logError) body
+mainHandler Nothing body = $(logError) (T.decodeUtf8 body)
     >> throwError (err400 { errBody = "invalid request" })
 mainHandler (Just sig) body = do
-    sig' <- asks (Base64.encode . flip hmac (T.encodeUtf8 body) . lbhChannelSecret)
+    sig' <- asks (Base64.encode . flip hmac body . lbhChannelSecret)
     if sig' == T.encodeUtf8 sig then
-        (unexpectedDecode ||| pure) (eitherDecode' $ BL.fromStrict $ T.encodeUtf8 body)
+        (unexpectedDecode ||| pure) (eitherDecode' $ BL.fromStrict body)
             >>= mainHandler'
     else unexpectedSig sig'
     where
@@ -97,9 +123,9 @@ mainHandler (Just sig) body = do
 api :: Proxy API
 api = Proxy
 
-loggingServer :: (Maybe LineSignature -> T.Text -> LineBotHandler T.Text)
+loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
     -> Maybe LineSignature
-    -> T.Text
+    -> B.ByteString
     -> Handler T.Text
 loggingServer f s b = do
     cfg <- liftIO $ LineBotHandlerConfig <$> getChannelSecret

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 219b4216dcaf6bc6eca0e80c3ea4202c21e507fdadc672403af4d50fd5cd3648
+-- hash: 4fd8f6af5de888abcc5b4aa3a95facab5561fa94fc93ab8a4f06c0713f775e40
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -58,6 +58,7 @@ library
     , extra
     , hedis
     , http-conduit
+    , http-media
     , jose
     , lens
     , monad-logger
@@ -92,6 +93,7 @@ executable line-bot-kiirotori
     , extra
     , hedis
     , http-conduit
+    , http-media
     , jose
     , lens
     , line-bot-kiirotori
@@ -128,6 +130,7 @@ test-suite line-bot-kiirotori-test
     , extra
     , hedis
     , http-conduit
+    , http-media
     , jose
     , lens
     , line-bot-kiirotori

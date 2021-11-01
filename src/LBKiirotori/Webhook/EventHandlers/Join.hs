@@ -4,7 +4,8 @@ module LBKiirotori.Webhook.EventHandlers.Join (
 ) where
 
 import           Control.Monad.IO.Class                         (MonadIO (..))
-import           Control.Monad.Logger                           (logError)
+import           Control.Monad.Logger                           (logError,
+                                                                 logInfo)
 import           Control.Monad.Reader                           (asks)
 
 import           LBKiirotori.AccessToken                        (getAccessTokenIO)
@@ -23,6 +24,7 @@ joinEvent e
         Nothing -> $(logError) "expected reply token"
         Just tk -> do
             caToken <- asks lbhRedisConn >>= liftIO . getAccessTokenIO
+            $(logInfo) "send reply message"
             replyMessage caToken $ ReplyMessage {
                 replyMessageReplyToken = tk
               , replyMessageMessages = [

@@ -113,7 +113,8 @@ mainHandler (Just sig) body = do
     where
         unexpectedDecode :: String -> LineBotHandler a
         unexpectedDecode s = $(logError) (tshow body)
-            >> throwError (err400 { errBody = fromString s })
+            >> $(logError) (T.pack s)
+            >> throwError (err400 { errBody = "invalid json data" })
 
         unexpectedSig :: B.ByteString -> LineBotHandler a
         unexpectedSig sig' = $(logError) (tshow body)

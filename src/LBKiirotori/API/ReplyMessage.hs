@@ -35,9 +35,9 @@ instance ToJSON ReplyMessage where
 reqReplyMessage :: B.ByteString -> ReplyMessage ->  Request
 reqReplyMessage = reqMessage "https://api.line.me/v2/bot/message/reply"
 
-replyMessage :: (MonadThrow m, MonadIO m) => B.ByteString -> ReplyMessage -> m ()
+replyMessage :: (MonadThrow m, MonadIO m) => AccessToken -> ReplyMessage -> m ()
 replyMessage token pm = do
-    resp <- httpLbs (reqReplyMessage token pm)
+    resp <- httpLbs (reqReplyMessage (atToken token) pm)
     if getResponseStatusCode resp == 200 then
         pure ()
     else

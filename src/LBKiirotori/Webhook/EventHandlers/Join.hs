@@ -3,9 +3,11 @@ module LBKiirotori.Webhook.EventHandlers.Join (
     joinEvent
 ) where
 
+import           Control.Monad.IO.Class                         (MonadIO (..))
 import           Control.Monad.Logger                           (logError)
 import           Control.Monad.Reader                           (asks)
 
+import           LBKiirotori.AccessToken                        (getAccessTokenIO)
 import           LBKiirotori.API.ReplyMessage
 import           LBKiirotori.Data.MessageObject                 (MessageBody (..),
                                                                  textMessage)
@@ -20,7 +22,7 @@ joinEvent e
     | lineEventType e == LineEventTypeJoin = case lineEventReplyToken e of
         Nothing -> $(logError) "expected reply token"
         Just tk -> do
-            caToken <- asks lbhChannelSecret
+            caToken <- asks lbhRedisConn >>= liftIO . getAccessTokenIO
             replyMessage caToken $ ReplyMessage {
                 replyMessageReplyToken = tk
               , replyMessageMessages = [

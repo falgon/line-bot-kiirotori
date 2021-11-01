@@ -20,7 +20,7 @@ import           LBKiirotori.Webhook      (kiirotoriApp)
 import           Network.Wai.Handler.Warp (run)
 
 main :: IO ()
-main = run 48080 kiirotoriApp
+main = putStrLn "boot server..." >> run 48080 kiirotoriApp
 
 {-
     conn <- newConn

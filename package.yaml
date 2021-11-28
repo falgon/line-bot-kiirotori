@@ -45,9 +45,23 @@ dependencies:
 - vector
 - cryptohash-sha256
 - http-media
+- path
+- path-io
+- htoml
+- optparse-applicative
+
+flags:
+  release:
+    manual: true
+    default: false
 
 library:
   source-dirs: src
+  when:
+    - condition: (flag(release))
+      then:
+        cpp-options: -DRELEASE
+      else: {}
 
 executables:
   line-bot-kiirotori:

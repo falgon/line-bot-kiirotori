@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 12592c22d6529cab308a716dacbfe7ee09d451cffd6f845800d2b74fa172ce7b
+-- hash: a8e2a549073ef9ae8b3eca24c40e9aedb1b2a4e00963c0ed253fafc451c6dddb
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -25,6 +25,10 @@ source-repository head
   type: git
   location: https://github.com/falgon/line-bot-kiirotori
 
+flag release
+  manual: True
+  default: False
+
 library
   exposed-modules:
       LBKiirotori.AccessToken
@@ -35,6 +39,7 @@ library
       LBKiirotori.API.MessageErrorResp
       LBKiirotori.API.PushMessage
       LBKiirotori.API.ReplyMessage
+      LBKiirotori.Config
       LBKiirotori.Data.MessageObject
       LBKiirotori.Internal.Exceptions
       LBKiirotori.Internal.HTTP
@@ -62,6 +67,7 @@ library
     , cryptohash-sha256
     , extra
     , hedis
+    , htoml
     , http-conduit
     , http-media
     , jose
@@ -69,6 +75,9 @@ library
     , monad-logger
     , monad-parallel
     , mtl
+    , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , scientific
     , servant
@@ -80,6 +89,9 @@ library
     , vector
     , warp
     , warp-tls
+  if (flag(release))
+    cpp-options: -DRELEASE
+  else
   default-language: Haskell2010
 
 executable line-bot-kiirotori
@@ -97,6 +109,7 @@ executable line-bot-kiirotori
     , cryptohash-sha256
     , extra
     , hedis
+    , htoml
     , http-conduit
     , http-media
     , jose
@@ -105,6 +118,9 @@ executable line-bot-kiirotori
     , monad-logger
     , monad-parallel
     , mtl
+    , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , scientific
     , servant
@@ -134,6 +150,7 @@ test-suite line-bot-kiirotori-test
     , cryptohash-sha256
     , extra
     , hedis
+    , htoml
     , http-conduit
     , http-media
     , jose
@@ -142,6 +159,9 @@ test-suite line-bot-kiirotori-test
     , monad-logger
     , monad-parallel
     , mtl
+    , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , scientific
     , servant

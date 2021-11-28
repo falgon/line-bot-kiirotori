@@ -46,6 +46,7 @@ import           Servant.Server.Internal.ServerError
 
 import           LBKiirotori.AccessToken.Config                 (getChannelSecret)
 import           LBKiirotori.AccessToken.Redis                  (newConn)
+import           LBKiirotori.Config                             (LBKiirotoriConfig (..))
 import           LBKiirotori.Internal.Utils                     (tshow)
 import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
@@ -113,7 +114,7 @@ mainHandler :: Maybe LineSignature
 mainHandler Nothing body = $(logError) (T.decodeUtf8 body)
     >> throwError (err400 { errBody = "invalid request" })
 mainHandler (Just sig) body = do
-    sig' <- asks (Base64.encode . flip hmac body . lbhChannelSecret)
+    sig' <- Base64.encode . flip hmac body <$> askLineChanSecret
     if sig' == T.encodeUtf8 sig then
         (unexpectedDecode ||| pure) (eitherDecode' $ BL.fromStrict body)
             >>= mainHandler'
@@ -133,18 +134,19 @@ api :: Proxy API
 api = Proxy
 
 loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
+    -> LBKiirotoriConfig
     -> Maybe LineSignature
     -> B.ByteString
     -> Handler T.Text
-loggingServer f s b = do
+loggingServer f cfg s b = do
     cfg <- liftIO $ LineBotHandlerConfig
-        <$> getChannelSecret
-        <*> newConn
+        <$> newConn
+        <*> pure cfg
     hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
 
-server :: Server API
+server :: LBKiirotoriConfig -> Server API
 server = loggingServer mainHandler
 
-kiirotoriApp :: Application
-kiirotoriApp = serve api server
+kiirotoriApp :: LBKiirotoriConfig -> Application
+kiirotoriApp = serve api . server
 

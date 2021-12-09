@@ -6,7 +6,7 @@ module LBKiirotori.Internal.Utils (
 
 import           Control.Arrow                   ((|||))
 import           Control.Exception.Safe          (MonadThrow (..), throwString)
-import           Data.Aeson                      
+import           Data.Aeson
 import qualified Data.ByteString.Lazy            as BL
 import           Data.Char                       (toLower)
 import qualified Data.Text                       as T

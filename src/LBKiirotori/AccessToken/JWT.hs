@@ -32,8 +32,7 @@ import           Data.Time.Clock.POSIX                          (utcTimeToPOSIXS
 import           Data.Word                                      (Word8)
 import           Prelude                                        hiding (exp)
 
-import           LBKiirotori.Internal.Exceptions                (MonadThrowable (..),
-                                                                 invalidArgument,
+import           LBKiirotori.Internal.Exceptions                (invalidArgument,
                                                                  stringException)
 import           LBKiirotori.Internal.Utils                     (decodeJSON)
 import           LBKiirotori.Webhook.EventObject.LineBotHandler (LineBotHandler (..),

@@ -6,6 +6,7 @@ module LBKiirotori.Webhook.EventHandlers.Join (
 import           Control.Monad.Logger                           (logError,
                                                                  logInfo)
 
+import           LBKiirotori.AccessToken                        (getAccessToken)
 import           LBKiirotori.API.ReplyMessage
 import           LBKiirotori.Data.MessageObject                 (MessageBody (..),
                                                                  textMessage)
@@ -20,7 +21,7 @@ joinEvent e
     | lineEventType e == LineEventTypeJoin = case lineEventReplyToken e of
         Nothing -> $(logError) "expected reply token"
         Just tk -> do
-            caToken <- askAccessToken
+            caToken <- getAccessToken
             $(logInfo) "send reply message"
             replyMessage caToken $ ReplyMessage {
                 replyMessageReplyToken = tk

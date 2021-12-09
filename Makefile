@@ -4,4 +4,10 @@ release:
 debug:
 	@stack build --fast
 
-.PHONY: release
+restyle:
+	@find ./app ./src -type f -name "*.hs" | xargs -n1 stylish-haskell -i
+
+restyle-with-hlint: restyle
+	hlint ./app ./src
+
+.PHONY: release debug restyle restyle-with-hlint

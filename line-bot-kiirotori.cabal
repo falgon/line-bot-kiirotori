@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a8e2a549073ef9ae8b3eca24c40e9aedb1b2a4e00963c0ed253fafc451c6dddb
+-- hash: c2355e7d20400de47f86286dae56f8987e2e698cdfc6dbde3240628e7f26469a
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -55,6 +55,8 @@ library
       LBKiirotori.Webhook.EventObject.EventSource
       LBKiirotori.Webhook.EventObject.EventType
       LBKiirotori.Webhook.EventObject.LineBotHandler
+      LBKiirotori.Webhook.EventObject.LineBotHandler.Core
+      LBKiirotori.Webhook.EventObject.LineBotHandler.Data
   other-modules:
       Paths_line_bot_kiirotori
   hs-source-dirs:
@@ -75,6 +77,7 @@ library
     , monad-logger
     , monad-parallel
     , mtl
+    , natural-transformation
     , optparse-applicative
     , path
     , path-io
@@ -84,6 +87,7 @@ library
     , servant-server
     , text
     , time
+    , transformers
     , unordered-containers
     , utf8-string
     , vector
@@ -118,6 +122,7 @@ executable line-bot-kiirotori
     , monad-logger
     , monad-parallel
     , mtl
+    , natural-transformation
     , optparse-applicative
     , path
     , path-io
@@ -127,6 +132,7 @@ executable line-bot-kiirotori
     , servant-server
     , text
     , time
+    , transformers
     , unordered-containers
     , utf8-string
     , vector
@@ -159,6 +165,7 @@ test-suite line-bot-kiirotori-test
     , monad-logger
     , monad-parallel
     , mtl
+    , natural-transformation
     , optparse-applicative
     , path
     , path-io
@@ -168,6 +175,7 @@ test-suite line-bot-kiirotori-test
     , servant-server
     , text
     , time
+    , transformers
     , unordered-containers
     , utf8-string
     , vector

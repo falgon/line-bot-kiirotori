@@ -44,7 +44,6 @@ import           Servant.Server                                 (Application,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
 
-import           LBKiirotori.AccessToken.Config                 (getChannelSecret)
 import           LBKiirotori.AccessToken.Redis                  (newConn)
 import           LBKiirotori.Config                             (LBKiirotoriConfig (..))
 import           LBKiirotori.Internal.Utils                     (tshow)
@@ -139,9 +138,7 @@ loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
     -> B.ByteString
     -> Handler T.Text
 loggingServer f cfg s b = do
-    cfg <- liftIO $ LineBotHandlerConfig
-        <$> newConn
-        <*> pure cfg
+    cfg <- LineBotHandlerConfig <$> newConn <*> pure cfg
     hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
 
 server :: LBKiirotoriConfig -> Server API

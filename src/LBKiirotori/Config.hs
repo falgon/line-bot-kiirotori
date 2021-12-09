@@ -7,26 +7,23 @@ module LBKiirotori.Config (
   , readConfig
 ) where
 
-import           Control.Arrow                  ((|||))
-import           Control.Exception.Safe         (MonadThrow (..), throwString)
-import           Control.Monad.IO.Class         (MonadIO (..))
-import           Control.Monad.Logger           (LoggingT)
-import           Control.Monad.Reader           (ReaderT, asks)
-import qualified Data.ByteString                as B
-import           Data.Functor                   ((<&>))
-import qualified Data.HashMap.Lazy              as HM
-import           Data.String                    (IsString (..))
-import qualified Data.Text                      as T
-import qualified Data.Text.Encoding             as T
-import qualified Data.Text.IO                   as T
-import           Database.Redis                 (Connection)
-import qualified Path                           as P
-import           Servant.Server                 (Handler)
-import           Text.Toml                      (parseTomlDoc)
-import           Text.Toml.Types                (Node (..), Table)
-
-import           LBKiirotori.AccessToken        (getAccessTokenIO)
-import           LBKiirotori.AccessToken.Config (AccessToken (..))
+import           Control.Arrow          ((|||))
+import           Control.Exception.Safe (MonadThrow (..), throwString)
+import           Control.Monad.IO.Class (MonadIO (..))
+import           Control.Monad.Logger   (LoggingT)
+import           Control.Monad.Reader   (ReaderT, asks)
+import qualified Data.ByteString        as B
+import           Data.Functor           ((<&>))
+import qualified Data.HashMap.Lazy      as HM
+import           Data.String            (IsString (..))
+import qualified Data.Text              as T
+import qualified Data.Text.Encoding     as T
+import qualified Data.Text.IO           as T
+import           Database.Redis         (Connection)
+import qualified Path                   as P
+import           Servant.Server         (Handler)
+import           Text.Toml              (parseTomlDoc)
+import           Text.Toml.Types        (Node (..), Table)
 
 newtype LBKiirotoriAppConfig = LBKiirotoriAppConfig {
     cfgAppWelcome :: T.Text
@@ -103,9 +100,10 @@ readConfig fp = do
         <&> LBKiirotoriAppConfig
     lineTable <- lookupTable "line" tables
     lineConfig <- LBKiirotoriLineConfig
-        <$> (lookupString "jwk_set_key_path" lineTable >>= liftIO . B.readFile)
+        <$> lookupString "jwk_set_key" lineTable
         <*> lookupString "kid" lineTable
         <*> lookupString "channel_id" lineTable
         <*> lookupString "channel_secret" lineTable
         <*> lookupString "user_id" lineTable
     pure $ LBKiirotoriConfig appConfig lineConfig
+

@@ -49,6 +49,8 @@ dependencies:
 - path-io
 - htoml
 - optparse-applicative
+- natural-transformation
+- transformers
 
 flags:
   release:

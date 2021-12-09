@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c2355e7d20400de47f86286dae56f8987e2e698cdfc6dbde3240628e7f26469a
+-- hash: 1e64ad5424e5e5b5b75d0912265e94d9d3a2bb21ed178468500ef0a9ca7c0721
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -95,7 +95,6 @@ library
     , warp-tls
   if (flag(release))
     cpp-options: -DRELEASE
-  else
   default-language: Haskell2010
 
 executable line-bot-kiirotori

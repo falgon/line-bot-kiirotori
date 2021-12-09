@@ -60,10 +60,8 @@ flags:
 library:
   source-dirs: src
   when:
-    - condition: (flag(release))
-      then:
-        cpp-options: -DRELEASE
-      else: {}
+      condition: (flag(release))
+      cpp-options: -DRELEASE
 
 executables:
   line-bot-kiirotori:

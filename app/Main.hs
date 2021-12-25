@@ -36,7 +36,9 @@ configPathOpt homeDir = OA.option (OA.maybeReader P.parseSomeFile) $ mconcat [
   , OA.metavar "<config file path>"
   ]
   where
-    conf = $(P.mkRelDir ".config") P.</> $(P.mkRelFile "lb-kiirotori.toml")
+    conf = $(P.mkRelDir ".config")
+        P.</> $(P.mkRelDir "lb-kiirotori")
+        P.</> $(P.mkRelFile "config.toml")
 
 programOptions :: P.Path P.Abs P.Dir -> OA.Parser Opts
 programOptions homeDir = Opts

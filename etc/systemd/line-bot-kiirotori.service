@@ -1,0 +1,33 @@
+[Unit]
+Description=LINE Bot Kiirotori
+After=network-online.target nginx.service docker.service
+PartOf=nginx.service docker.service
+Requires=nginx.service docker.service
+BindsTo=nginx.service docker.service
+
+[Service]
+Type=simple
+Environment=SITES_AVAILABLE_PATH=/etc/nginx/sites-available
+Environment=SITES_ENABLE_PATH=/etc/nginx/sites-enabled
+Environment=NGINX_CONF_NAME=api-linebot.roki.dev.conf
+Environment=APP_CONF_PATH=/root/.config/lb-kiirotori
+
+User=root
+Group=root
+Nice=0
+
+Restart=on-failure
+RestartSec=30s
+
+ExecStartPre=/usr/bin/ln -s ${SITES_AVAILABLE_PATH}/${NGINX_CONF_NAME} ${SITES_ENABLE_PATH}
+ExecStartPre=/usr/bin/docker-compose -f ${APP_CONF_PATH}/redis/docker-compose.yml up -d
+ExecStart=/usr/local/bin/line-bot-kiirotori serve
+ExecStartPost=/bin/systemctl try-restart nginx.service
+
+ExecStop=/bin/kill -SIGTERM $MAINPID
+ExecStopPost=/usr/bin/rm -f ${SITES_ENABLE_PATH}/${NGINX_CONF_NAME}
+ExecStopPost=/usr/bin/docker-compose -f ${APP_CONF_PATH}/redis/docker-compose.yml stop
+
+[Install]
+WantedBy = multi-user.target
+

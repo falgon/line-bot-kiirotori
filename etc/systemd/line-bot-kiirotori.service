@@ -1,9 +1,7 @@
 [Unit]
 Description=LINE Bot Kiirotori
-After=network-online.target nginx.service docker.service
-PartOf=nginx.service docker.service
-Requires=nginx.service docker.service
-BindsTo=nginx.service docker.service
+After=network-online.target docker.service
+Requires=docker.service nginx.service
 
 [Service]
 Type=simple
@@ -21,7 +19,8 @@ RestartSec=30s
 
 ExecStartPre=/usr/bin/ln -s ${SITES_AVAILABLE_PATH}/${NGINX_CONF_NAME} ${SITES_ENABLE_PATH}
 ExecStartPre=/usr/bin/docker-compose -f ${APP_CONF_PATH}/redis/docker-compose.yml up -d
-ExecStart=/usr/local/bin/line-bot-kiirotori serve
+ExecStart=/usr/local/bin/line-bot-kiirotori serve   \
+    --config /root/.config/lb-kiirotori/config.toml
 ExecStartPost=/bin/systemctl try-restart nginx.service
 
 ExecStop=/bin/kill -SIGTERM $MAINPID
@@ -31,4 +30,4 @@ ExecStopPost=/bin/systemctl try-restart nginx.service
 
 [Install]
 WantedBy=multi-user.target
-
+Alias=linebot-kiirotori.service lb-kiirotori.service lbk.service

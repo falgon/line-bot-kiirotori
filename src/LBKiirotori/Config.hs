@@ -15,11 +15,13 @@ import           Control.Monad.Reader   (ReaderT, asks)
 import qualified Data.ByteString        as B
 import           Data.Functor           ((<&>))
 import qualified Data.HashMap.Lazy      as HM
+import           Data.Int               (Int64)
 import           Data.String            (IsString (..))
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as T
 import qualified Data.Text.IO           as T
-import           Database.Redis         (Connection)
+import           Database.Redis         (ConnectInfo (..), Connection,
+                                         PortID (..), defaultConnectInfo)
 import qualified Path                   as P
 import           Servant.Server         (Handler)
 import           Text.Toml              (parseTomlDoc)
@@ -52,18 +54,19 @@ instance Monoid LBKiirotoriLineConfig where
 #endif
 
 data LBKiirotoriConfig = LBKiirotoriConfig {
-    cfgApp  :: LBKiirotoriAppConfig
-  , cfgLine :: LBKiirotoriLineConfig
+    cfgApp   :: LBKiirotoriAppConfig
+  , cfgRedis :: ConnectInfo
+  , cfgLine  :: LBKiirotoriLineConfig
   }
   deriving stock Show
 
 #ifndef RELEASE
 instance Semigroup LBKiirotoriConfig where
-    (LBKiirotoriConfig l1 l2) <> (LBKiirotoriConfig r1 r2) =
-        LBKiirotoriConfig (l1 <> r1) (l2 <> r2)
+    (LBKiirotoriConfig l1 _ l3) <> (LBKiirotoriConfig r1 _ r3) =
+        LBKiirotoriConfig (l1 <> r1) defaultConnectInfo (l3 <> r3)
 
 instance Monoid LBKiirotoriConfig where
-    mempty = LBKiirotoriConfig mempty mempty
+    mempty = LBKiirotoriConfig mempty defaultConnectInfo mempty
 #endif
 
 readToml :: (MonadIO m, MonadThrow m)
@@ -90,6 +93,34 @@ lookupString key tb = case HM.lookup key tb of
     Just (VString s) -> pure $ fromString $ T.unpack s
     _                -> throwString $ "expected string " <> T.unpack key
 
+lookupInteger :: (Integral i, MonadThrow m)
+    => T.Text
+    -> Table
+    -> m i
+lookupInteger key tb = case HM.lookup key tb of
+    Just (VInteger v) -> pure $ fromIntegral v
+    _                 -> throwString $ "expected integer " <> T.unpack key
+
+getRedisConfig :: MonadThrow m => Table -> m ConnectInfo
+getRedisConfig redisTable = do
+    hostname <- lookupString "hostname" redisTable
+    port <- lookupInteger "port" redisTable
+        <&> PortNumber
+    password <- lookupString "password" redisTable
+        <&> \x -> if x == mempty then Nothing else Just x
+    select <- lookupInteger "select" redisTable
+    maxConn <- lookupInteger "max_connections" redisTable
+    maxIdle <- lookupInteger "max_idle_time" redisTable
+        <&> fromInteger
+    pure $ defaultConnectInfo {
+        connectHost = hostname
+      , connectPort = port
+      , connectAuth = password
+      , connectDatabase = select
+      , connectMaxConnections = maxConn
+      , connectMaxIdleTime = maxIdle
+      }
+
 readConfig :: (MonadIO m, MonadThrow m)
     => P.SomeBase P.File
     -> m LBKiirotoriConfig
@@ -98,6 +129,8 @@ readConfig fp = do
     appConfig <- lookupTable "app" tables
         >>= lookupString "welcome_message"
         <&> LBKiirotoriAppConfig
+    redisConfig <- lookupTable "redis" tables
+        >>= getRedisConfig
     lineTable <- lookupTable "line" tables
     lineConfig <- LBKiirotoriLineConfig
         <$> lookupString "jwk_set_key" lineTable
@@ -105,5 +138,5 @@ readConfig fp = do
         <*> lookupString "channel_id" lineTable
         <*> lookupString "channel_secret" lineTable
         <*> lookupString "user_id" lineTable
-    pure $ LBKiirotoriConfig appConfig lineConfig
+    pure $ LBKiirotoriConfig appConfig redisConfig lineConfig
 

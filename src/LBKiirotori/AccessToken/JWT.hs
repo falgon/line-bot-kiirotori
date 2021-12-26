@@ -46,11 +46,11 @@ getJwk = askLineJWKSet >>= decodeJSON . BL.fromStrict
 newClaimsSet :: Scientific -> LineBotHandler ClaimsSet
 newClaimsSet seconds
     | seconds <= tokenExpMax = do
-        channelID <- BC.unpack <$> askLineChanId
+        channelID <- fromString . BC.unpack <$> askLineChanId
         expDate <- NumericDate . addUTCTime jwtAssertionMax <$> liftIO getCurrentTime
         pure $ emptyClaimsSet
-            & claimIss ?~ fromString channelID
-            & claimSub ?~ fromString channelID
+            & claimIss ?~ channelID
+            & claimSub ?~ channelID
             & claimAud ?~ Audience ["https://api.line.me/"]
             & claimExp ?~ expDate
             & unregisteredClaims .~ HM.singleton "token_exp" (Number seconds)

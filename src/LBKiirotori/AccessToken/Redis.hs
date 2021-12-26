@@ -30,7 +30,8 @@ import           Data.Time.Format                               (defaultTimeLoca
                                                                  rfc822DateFormat)
 import           Data.Time.LocalTime                            (TimeZone (..), getCurrentTimeZone,
                                                                  utcToLocalTime)
-import           Database.Redis                                 (Connection,
+import           Database.Redis                                 (ConnectInfo,
+                                                                 Connection,
                                                                  checkedConnect,
                                                                  defaultConnectInfo,
                                                                  hmget, hmset,
@@ -42,8 +43,8 @@ import           LBKiirotori.AccessToken.Core                   (LineIssueChanne
 import           LBKiirotori.Webhook.EventObject.LineBotHandler (LineBotHandler,
                                                                  askRedisConn)
 
-newConn :: MonadIO m => m Connection
-newConn = liftIO $ checkedConnect defaultConnectInfo
+newConn :: MonadIO m => ConnectInfo -> m Connection
+newConn = liftIO . checkedConnect
 
 writeToken :: UTCTime
     -> LineIssueChannelResp

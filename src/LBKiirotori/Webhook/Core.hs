@@ -138,7 +138,7 @@ loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
     -> B.ByteString
     -> Handler T.Text
 loggingServer f cfg s b = do
-    cfg <- LineBotHandlerConfig <$> newConn <*> pure cfg
+    cfg <- LineBotHandlerConfig <$> newConn (cfgRedis cfg) <*> pure cfg
     hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
 
 server :: LBKiirotoriConfig -> Server API

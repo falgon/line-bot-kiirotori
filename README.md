@@ -2,6 +2,7 @@
 
 ## Requirements
 
+- systemd
 - nginx
     - Virtual host settings required
 - docker
@@ -19,10 +20,11 @@ make install
 sudo systemctl start line-bot-kiirotori
 ```
 
-## Development build
+## Development build and run
 
 ```bash
 stack build --fast
+stack exec line-bot-kiirotori -- serve -c <config path>
 ```
 
 ## Configration

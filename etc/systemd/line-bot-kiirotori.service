@@ -25,9 +25,10 @@ ExecStart=/usr/local/bin/line-bot-kiirotori serve
 ExecStartPost=/bin/systemctl try-restart nginx.service
 
 ExecStop=/bin/kill -SIGTERM $MAINPID
-ExecStopPost=/usr/bin/rm -f ${SITES_ENABLE_PATH}/${NGINX_CONF_NAME}
+ExecStopPost=/usr/bin/unlink ${SITES_ENABLE_PATH}/${NGINX_CONF_NAME}
 ExecStopPost=/usr/bin/docker-compose -f ${APP_CONF_PATH}/redis/docker-compose.yml stop
+ExecStopPost=/bin/systemctl try-restart nginx.service
 
 [Install]
-WantedBy = multi-user.target
+WantedBy=multi-user.target
 

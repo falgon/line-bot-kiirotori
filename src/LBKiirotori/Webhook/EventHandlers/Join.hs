@@ -5,9 +5,12 @@ module LBKiirotori.Webhook.EventHandlers.Join (
 
 import           Control.Monad.Logger                           (logError,
                                                                  logInfo)
+import           Control.Monad.Reader                           (asks)
 
 import           LBKiirotori.AccessToken                        (getAccessToken)
 import           LBKiirotori.API.ReplyMessage
+import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
+                                                                 LBKiirotoriConfig (..))
 import           LBKiirotori.Data.MessageObject                 (MessageBody (..),
                                                                  textMessage)
 import           LBKiirotori.Internal.Utils                     (tshow)
@@ -22,11 +25,12 @@ joinEvent e
         Nothing -> $(logError) "expected reply token"
         Just tk -> do
             caToken <- getAccessToken
+            joinMessage <- asks $ cfgAppWelcome . cfgApp . lbhCfg
             $(logInfo) "send reply message"
             replyMessage caToken $ ReplyMessage {
                 replyMessageReplyToken = tk
               , replyMessageMessages = [
-                    MBText $ textMessage "hello\nhoge" Nothing Nothing
+                    MBText $ textMessage joinMessage Nothing Nothing
                   ]
               , replyMessageNotificationDisabled = Nothing
               }

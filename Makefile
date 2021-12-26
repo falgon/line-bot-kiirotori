@@ -24,7 +24,6 @@ install:
 		--ghc-options -O2
 	@sudo mv $(HOME)/.local/bin/$(BIN_NAME) $(INSTALL_PATH)
 	@sudo mkdir -p $(EXECUTOR_CONF_DIR) && sudo cp -rv ./docker/redis $(EXECUTOR_CONF_DIR)
-	#@sudo bash -c 'pushd $(EXECUTOR_CONF_DIR)/redis && docker-compose build && popd'
 	@sudo cp -v .$(NGINX_SITES_AVAILABLE_PATH)/$(CONF_NAME) $(NGINX_SITES_AVAILABLE_PATH)
 	@sudo cp -v ./etc/systemd/$(SYSTEMD_SERVICE_NAME) /etc/systemd/system
 	@sudo systemctl daemon-reload
@@ -37,6 +36,5 @@ uninstall:
 		$(NGINX_SITES_AVAILABLE_PATH)/$(CONF_NAME) \
 		/etc/systemd/system/$(SYSTEMD_SERVICE_NAME)
 	@sudo bash -c 'pushd $(EXECUTOR_CONF_DIR)/redis && docker-compose down --rmi all --volumes && popd'
-	# @sudo rm -v /root/.config/lb-kiirotori
 
 .PHONY: release debug restyle restyle-with-hlint install uninstall

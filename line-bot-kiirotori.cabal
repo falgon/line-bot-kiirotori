@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b4450985cdf9976c13edf6a8a807a8d5a48a9046ef4e695423f16d78c5686a34
+-- hash: 6b9c733cf54978e7d6cce326aa71c8f9b89ce514cb0683586088480a84382c8f
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -48,6 +48,7 @@ library
       LBKiirotori.Webhook.Core
       LBKiirotori.Webhook.EventHandlers
       LBKiirotori.Webhook.EventHandlers.Join
+      LBKiirotori.Webhook.EventHandlers.Message
       LBKiirotori.Webhook.EventObject
       LBKiirotori.Webhook.EventObject.Core
       LBKiirotori.Webhook.EventObject.EventMessage
@@ -74,6 +75,7 @@ library
     , http-media
     , jose
     , lens
+    , megaparsec
     , monad-logger
     , monad-parallel
     , mtl
@@ -86,6 +88,7 @@ library
     , servant-server
     , text
     , time
+    , transformers
     , unordered-containers
     , utf8-string
     , vector
@@ -116,6 +119,7 @@ executable line-bot-kiirotori
     , jose
     , lens
     , line-bot-kiirotori
+    , megaparsec
     , monad-logger
     , monad-parallel
     , mtl
@@ -128,6 +132,7 @@ executable line-bot-kiirotori
     , servant-server
     , text
     , time
+    , transformers
     , unordered-containers
     , utf8-string
     , vector
@@ -157,6 +162,7 @@ test-suite line-bot-kiirotori-test
     , jose
     , lens
     , line-bot-kiirotori
+    , megaparsec
     , monad-logger
     , monad-parallel
     , mtl
@@ -169,6 +175,7 @@ test-suite line-bot-kiirotori-test
     , servant-server
     , text
     , time
+    , transformers
     , unordered-containers
     , utf8-string
     , vector

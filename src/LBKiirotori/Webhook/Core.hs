@@ -101,6 +101,7 @@ eventHandler :: LineEventObject
     -> LineBotHandler ()
 eventHandler e
     | lineEventType e == LineEventTypeJoin = joinEvent e
+    | lineEventType e == LineEventTypeMessage = messageEvent e
     | otherwise = $(logInfo) (tshow e)
 
 mainHandler' :: LineWebhookRequestBody

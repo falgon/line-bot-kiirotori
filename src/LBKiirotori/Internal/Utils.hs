@@ -2,10 +2,12 @@ module LBKiirotori.Internal.Utils (
     tshow
   , stripFirstToLowerLabeledOption
   , decodeJSON
+  , hoistMaybe
 ) where
 
 import           Control.Arrow                   ((|||))
 import           Control.Exception.Safe          (MonadThrow (..), throwString)
+import           Control.Monad.Trans.Maybe       (MaybeT (..))
 import           Data.Aeson
 import qualified Data.ByteString.Lazy            as BL
 import           Data.Char                       (toLower)
@@ -30,3 +32,6 @@ stripFirstToLowerLabeledOption n = defaultOptions {
 
 decodeJSON :: (MonadThrow m, FromJSON a) => BL.ByteString -> m a
 decodeJSON = (throwString ||| pure) . eitherDecode
+
+hoistMaybe :: Applicative m => Maybe b -> MaybeT m b
+hoistMaybe = MaybeT . pure

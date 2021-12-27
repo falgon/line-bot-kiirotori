@@ -1,15 +1,18 @@
 module LBKiirotori.Webhook.EventObject.LineBotHandler.Core where
 
-import LBKiirotori.AccessToken.Config (AccessToken (..))
-import LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler)
-import qualified Data.ByteString as B
-import Database.Redis (Connection)
+import qualified Data.ByteString                                     as B
+import qualified Data.Text                                           as T
+import           Database.Redis                                      (Connection)
+import           LBKiirotori.AccessToken.Config                      (AccessToken (..))
+import           LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler)
 
 askLineKId :: LineBotHandler B.ByteString
 
 askLineChanId :: LineBotHandler B.ByteString
 
 askLineChanSecret :: LineBotHandler B.ByteString
+
+askLineChanName :: LineBotHandler T.Text
 
 askLineUserId :: LineBotHandler B.ByteString
 

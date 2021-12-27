@@ -2,6 +2,7 @@ module LBKiirotori.Webhook.EventObject.LineBotHandler.Core (
     askLineKId
   , askLineChanId
   , askLineChanSecret
+  , askLineChanName
   , askLineUserId
   , askLineJWKSet
   , askRedisConn
@@ -10,6 +11,7 @@ module LBKiirotori.Webhook.EventObject.LineBotHandler.Core (
 import           Control.Monad.IO.Class                              (MonadIO (..))
 import           Control.Monad.Reader                                (asks)
 import qualified Data.ByteString                                     as B
+import qualified Data.Text                                           as T
 import           Database.Redis                                      (Connection)
 
 import           LBKiirotori.Config                                  (LBKiirotoriConfig (..),
@@ -25,6 +27,9 @@ askLineChanId = asks $ cfgChannelID . cfgLine . lbhCfg
 
 askLineChanSecret :: LineBotHandler B.ByteString
 askLineChanSecret = asks $ cfgChannelSecret . cfgLine . lbhCfg
+
+askLineChanName :: LineBotHandler T.Text
+askLineChanName = asks $ cfgChannelName . cfgLine . lbhCfg
 
 askLineUserId :: LineBotHandler B.ByteString
 askLineUserId = asks $ cfgUserID . cfgLine . lbhCfg

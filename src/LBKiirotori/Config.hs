@@ -40,17 +40,18 @@ data LBKiirotoriLineConfig = LBKiirotoriLineConfig {
   , cfgKID           :: B.ByteString
   , cfgChannelID     :: B.ByteString
   , cfgChannelSecret :: B.ByteString
+  , cfgChannelName   :: T.Text
   , cfgUserID        :: B.ByteString
   }
   deriving stock Show
 
 #ifndef RELEASE
 instance Semigroup LBKiirotoriLineConfig where
-    (LBKiirotoriLineConfig l1 l2 l3 l4 l5) <> (LBKiirotoriLineConfig r1 r2 r3 r4 r5) =
-        LBKiirotoriLineConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5)
+    (LBKiirotoriLineConfig l1 l2 l3 l4 l5 l6) <> (LBKiirotoriLineConfig r1 r2 r3 r4 r5 r6) =
+        LBKiirotoriLineConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5) (l6 <> r6)
 
 instance Monoid LBKiirotoriLineConfig where
-    mempty = LBKiirotoriLineConfig mempty mempty mempty mempty mempty
+    mempty = LBKiirotoriLineConfig mempty mempty mempty mempty mempty mempty
 #endif
 
 data LBKiirotoriConfig = LBKiirotoriConfig {
@@ -101,8 +102,8 @@ lookupInteger key tb = case HM.lookup key tb of
     Just (VInteger v) -> pure $ fromIntegral v
     _                 -> throwString $ "expected integer " <> T.unpack key
 
-getRedisConfig :: MonadThrow m => Table -> m ConnectInfo
-getRedisConfig redisTable = do
+readRedisConfig :: MonadThrow m => Table -> m ConnectInfo
+readRedisConfig redisTable = do
     hostname <- lookupString "hostname" redisTable
     port <- lookupInteger "port" redisTable
         <&> PortNumber
@@ -130,13 +131,14 @@ readConfig fp = do
         >>= lookupString "welcome_message"
         <&> LBKiirotoriAppConfig
     redisConfig <- lookupTable "redis" tables
-        >>= getRedisConfig
+        >>= readRedisConfig
     lineTable <- lookupTable "line" tables
     lineConfig <- LBKiirotoriLineConfig
         <$> lookupString "jwk_set_key" lineTable
         <*> lookupString "kid" lineTable
         <*> lookupString "channel_id" lineTable
         <*> lookupString "channel_secret" lineTable
+        <*> lookupString "channel_name" lineTable
         <*> lookupString "user_id" lineTable
     pure $ LBKiirotoriConfig appConfig redisConfig lineConfig
 

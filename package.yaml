@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - text
+- transformers
 - unordered-containers
 - time
 - safe-exceptions
@@ -49,6 +50,7 @@ dependencies:
 - path-io
 - htoml
 - optparse-applicative
+- megaparsec
 
 flags:
   release:

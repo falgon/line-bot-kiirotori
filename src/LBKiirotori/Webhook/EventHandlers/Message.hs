@@ -47,7 +47,7 @@ mentionMeP = spaceConsumer
     <* MC.space1
 
 repliedMeParser :: M.ParsecT Void T.Text (MaybeT LineBotHandler) (Maybe T.Text)
-repliedMeParser = M.option Nothing (mentionMeP *> M.getInput <&> Just)
+repliedMeParser = M.option Nothing $ M.try (mentionMeP *> M.getInput <&> Just)
 
 isRepliedMe :: LineEventSource
     -> LineEventMessage

@@ -5,7 +5,7 @@ module LBKiirotori.Webhook.EventHandlers.Message (
 
 import           Control.Applicative                            (Alternative (..))
 import           Control.Arrow                                  ((|||))
-import           Control.Exception.Safe                         (throw)
+import           Control.Exception.Safe                         (throwString)
 import           Control.Monad                                  (void)
 import           Control.Monad.Extra                            (ifM)
 import           Control.Monad.Logger                           (logError,
@@ -60,7 +60,7 @@ isRepliedMe :: LineEventSource
 isRepliedMe src mobj = runMaybeT $
     hoistMaybe (lemText mobj)
         >>= M.runParserT repliedMeParser mempty
-        >>= (lift . throw ||| hoistMaybe)
+        >>= (lift . throwString . M.errorBundlePretty ||| hoistMaybe)
 
 messageEvent :: LineEventObject
     -> LineBotHandler ()

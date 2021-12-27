@@ -40,16 +40,11 @@ spaceConsumer :: Ord e
     => M.ParsecT e T.Text m ()
 spaceConsumer = MCL.space MC.space1 M.empty M.empty
 
-lexeme :: Ord e
-    => M.ParsecT e T.Text m a
-    -> M.ParsecT e T.Text m a
-lexeme = MCL.lexeme spaceConsumer
-
 mentionMeP :: Ord e
     => M.ParsecT e T.Text (MaybeT LineBotHandler) ()
 mentionMeP = spaceConsumer
     *> (lift (lift askLineChanName) >>= void . MC.string . (T.singleton '@' <>))
-    <* lexeme MC.space1
+    <* MC.space1
 
 repliedMeParser :: M.ParsecT Void T.Text (MaybeT LineBotHandler) (Maybe T.Text)
 repliedMeParser = M.option Nothing (mentionMeP *> M.getInput <&> Just)

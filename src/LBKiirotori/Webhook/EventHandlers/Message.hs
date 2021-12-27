@@ -36,16 +36,14 @@ import           LBKiirotori.Webhook.EventObject.EventSource    (LineEventSource
                                                                  LineEventSourceType (..))
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
-spaceConsumer :: Ord e
-    => M.ParsecT e T.Text m ()
-spaceConsumer = MCL.space MC.space1 M.empty M.empty
-
+-- <mention me> ::= (<space>*) "@kiirotori" <space>
 mentionMeP :: Ord e
     => M.ParsecT e T.Text (MaybeT LineBotHandler) ()
-mentionMeP = spaceConsumer
+mentionMeP = MC.space
     *> (lift (lift askLineChanName) >>= void . MC.string . (T.singleton '@' <>))
     <* MC.space1
 
+-- <replied message> ::= <mention me> <string>
 repliedMeParser :: M.ParsecT Void T.Text (MaybeT LineBotHandler) (Maybe T.Text)
 repliedMeParser = M.option Nothing $ M.try (mentionMeP *> M.getInput <&> Just)
 

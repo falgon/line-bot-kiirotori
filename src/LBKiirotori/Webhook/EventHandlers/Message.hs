@@ -6,7 +6,7 @@ module LBKiirotori.Webhook.EventHandlers.Message (
 import           Control.Applicative                            (Alternative (..))
 import           Control.Arrow                                  ((|||))
 import           Control.Exception.Safe                         (throw)
-import           Control.Monad                                  (void, (>=>))
+import           Control.Monad                                  (void)
 import           Control.Monad.Extra                            (ifM)
 import           Control.Monad.Logger                           (logError,
                                                                  logInfo)
@@ -53,10 +53,10 @@ mentionMeP = spaceConsumer
 repliedMeParser :: M.ParsecT Void T.Text (MaybeT LineBotHandler) (Maybe T.Text)
 repliedMeParser = M.option Nothing (mentionMeP *> M.getInput <&> Just)
 
-isReplyMe :: LineEventSource
+isRepliedMe :: LineEventSource
     -> LineEventMessage
     -> LineBotHandler (Maybe T.Text)
-isReplyMe src mobj = runMaybeT $
+isRepliedMe src mobj = runMaybeT $
     ifM ((||)
         <$> pure (lineEventSrcType src /= LineEventSourceTypeUser)
         <*> ((==) <$> hoistMaybe (lineEventSrcUserId src) <*> (T.decodeUtf8 <$> lift askLineUserId)))
@@ -71,8 +71,8 @@ messageEvent e
     | lineEventType e == LineEventTypeMessage =
         case (,) <$> lineEventReplyToken e <*> lineEventMessage e of
             Nothing -> $(logError) "expected reply token and message object"
-            Just (tk, mobj) -> isReplyMe (lineEventSource e) mobj >>= \case
-                Nothing -> pure ()
+            Just (tk, mobj) -> isRepliedMe (lineEventSource e) mobj >>= \case
+                Nothing -> $(logInfo) "the message is not replied me"
                 Just txtBody -> do
                     $(logInfo) "send reply message"
                     caToken <- getAccessToken

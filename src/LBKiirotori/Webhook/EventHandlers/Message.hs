@@ -36,27 +36,6 @@ import           LBKiirotori.Webhook.EventObject.EventSource    (LineEventSource
                                                                  LineEventSourceType (..))
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
-    {-
-messageEvent :: LineEventObject
-    -> LineBotHandler ()
-messageEvent e
-    | lineEventType e == LineEventTypeMessage = case lineEventReplyToken e of
-        Nothing -> $(logError) "expected reply token"
-        Just tk -> do
-            caToken <- getAccessToken
-            -- messageMessage <- asks $ cfgAppWelcome . cfgApp . lbhCfg
-            $(logInfo) "send reply message"
-            replyMessage caToken $ ReplyMessage {
-                replyMessageReplyToken = tk
-              , replyMessageMessages = [
-                    MBText $ textMessage messageMessage Nothing Nothing
-                  ]
-              , replyMessageNotificationDisabled = Nothing
-              }
-    | otherwise = $(logError) "expected message event"
-        >> $(logError) (tshow e)
--}
-
 spaceConsumer :: Ord e
     => M.ParsecT e T.Text m ()
 spaceConsumer = MCL.space MC.space1 M.empty M.empty
@@ -92,7 +71,7 @@ messageEvent e
     | lineEventType e == LineEventTypeMessage =
         case (,) <$> lineEventReplyToken e <*> lineEventMessage e of
             Nothing -> $(logError) "expected reply token and message object"
-            Just (tk, mobj) -> isReplyMe (lineEventSource e) (mobj) >>= \case
+            Just (tk, mobj) -> isReplyMe (lineEventSource e) mobj >>= \case
                 Nothing -> pure ()
                 Just txtBody -> do
                     $(logInfo) "send reply message"

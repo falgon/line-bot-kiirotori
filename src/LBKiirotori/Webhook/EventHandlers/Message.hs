@@ -57,13 +57,9 @@ isRepliedMe :: LineEventSource
     -> LineEventMessage
     -> LineBotHandler (Maybe T.Text)
 isRepliedMe src mobj = runMaybeT $
-    ifM ((||)
-        <$> pure (lineEventSrcType src /= LineEventSourceTypeUser)
-        <*> ((==) <$> hoistMaybe (lineEventSrcUserId src) <*> (T.decodeUtf8 <$> lift askLineUserId)))
-        empty
-        (hoistMaybe (lemText mobj)
-            >>= M.runParserT repliedMeParser mempty
-            >>= (lift . throw ||| hoistMaybe))
+    hoistMaybe (lemText mobj)
+        >>= M.runParserT repliedMeParser mempty
+        >>= (lift . throw ||| hoistMaybe)
 
 messageEvent :: LineEventObject
     -> LineBotHandler ()

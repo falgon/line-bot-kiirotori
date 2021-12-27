@@ -48,7 +48,8 @@ lexeme = MCL.lexeme spaceConsumer
 mentionMeP :: Ord e
     => M.ParsecT e T.Text (MaybeT LineBotHandler) ()
 mentionMeP = spaceConsumer
-    *> (lift (lift askLineChanName) >>= void . lexeme . MC.string . (T.singleton '@' <>))
+    *> (lift (lift askLineChanName) >>= MC.string . (T.singleton '@' <>))
+    *> void (lexeme MC.space1)
 
 repliedMeParser :: M.ParsecT Void T.Text (MaybeT LineBotHandler) (Maybe T.Text)
 repliedMeParser = M.option Nothing (mentionMeP *> M.getInput <&> Just)

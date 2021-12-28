@@ -47,10 +47,9 @@ mentionMeP = MC.space
 repliedMeParser :: M.ParsecT Void T.Text (MaybeT LineBotHandler) (Maybe T.Text)
 repliedMeParser = M.option Nothing $ M.try (mentionMeP *> M.getInput <&> Just)
 
-isRepliedMe :: LineEventSource
-    -> LineEventMessage
+isRepliedMe :: LineEventMessage
     -> LineBotHandler (Maybe T.Text)
-isRepliedMe src mobj = runMaybeT $
+isRepliedMe mobj = runMaybeT $
     hoistMaybe (lemText mobj)
         >>= M.runParserT repliedMeParser mempty
         >>= (lift . throwString . M.errorBundlePretty ||| hoistMaybe)
@@ -61,7 +60,7 @@ messageEvent e
     | lineEventType e == LineEventTypeMessage =
         case (,) <$> lineEventReplyToken e <*> lineEventMessage e of
             Nothing -> $(logError) "expected reply token and message object"
-            Just (tk, mobj) -> isRepliedMe (lineEventSource e) mobj >>= \case
+            Just (tk, mobj) -> isRepliedMe mobj >>= \case
                 Nothing -> $(logInfo) "the message is not replied me"
                 Just txtBody -> do
                     $(logInfo) "send reply message"

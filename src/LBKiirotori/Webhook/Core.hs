@@ -8,10 +8,11 @@ import           Control.Arrow                                  ((|||))
 import           Control.Monad                                  (forM_)
 import           Control.Monad.Except                           (MonadError (..))
 import           Control.Monad.IO.Class                         (MonadIO (..))
-import           Control.Monad.Logger                           (LoggingT,
+import           Control.Monad.Logger                           (LoggingT (..),
                                                                  logError,
                                                                  logInfo,
                                                                  runStdoutLoggingT)
+import           Control.Monad.Parallel                         as MP
 import           Control.Monad.Reader                           (ReaderT (..),
                                                                  asks)
 import           Crypto.Hash.SHA256                             (hmac)
@@ -38,7 +39,7 @@ import           Servant                                        (Header, JSON,
                                                                  type (:>))
 import           Servant.API.ContentTypes                       (Accept (..))
 import           Servant.Server                                 (Application,
-                                                                 Handler,
+                                                                 Handler (..),
                                                                  Server,
                                                                  hoistServer,
                                                                  serve)
@@ -90,6 +91,14 @@ instance MimeUnrender WebhookJSON BL.ByteString where
 instance MimeUnrender WebhookJSON B.ByteString where
     mimeUnrender _ = Right . BL.toStrict
 
+instance MonadParallel m => MonadParallel (LoggingT m) where
+    bindM2 f ma mb = LoggingT $ \g ->
+        bindM2 ((.) (flip runLoggingT g) . f) (runLoggingT ma g) (runLoggingT mb g)
+
+instance MonadParallel Handler where
+    bindM2 f ma mb = Handler $
+        bindM2 ((.) runHandler' . f) (runHandler' ma) (runHandler' mb)
+
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-headers
 type API = "linebot"
     :> "webhook"
@@ -106,7 +115,7 @@ eventHandler e
 
 mainHandler' :: LineWebhookRequestBody
     -> LineBotHandler T.Text
-mainHandler' (LineWebhookRequestBody _ events) = mapM_ eventHandler events $> mempty
+mainHandler' (LineWebhookRequestBody _ events) = MP.mapM_ eventHandler events $> mempty
 
 mainHandler :: Maybe LineSignature
     -> B.ByteString

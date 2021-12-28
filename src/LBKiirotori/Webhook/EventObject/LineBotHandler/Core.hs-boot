@@ -2,7 +2,8 @@ module LBKiirotori.Webhook.EventObject.LineBotHandler.Core where
 
 import qualified Data.ByteString                                     as B
 import qualified Data.Text                                           as T
-import           Database.Redis                                      (Connection)
+import           Database.Redis                                      (Connection,
+                                                                      Redis)
 import           LBKiirotori.AccessToken.Config                      (AccessToken (..))
 import           LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler)
 
@@ -19,3 +20,5 @@ askLineUserId :: LineBotHandler B.ByteString
 askLineJWKSet :: LineBotHandler B.ByteString
 
 askRedisConn :: LineBotHandler Connection
+
+runRedis :: Redis a -> LineBotHandler a

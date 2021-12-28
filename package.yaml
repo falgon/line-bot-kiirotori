@@ -51,6 +51,7 @@ dependencies:
 - htoml
 - optparse-applicative
 - megaparsec
+- fixed-vector
 
 flags:
   release:

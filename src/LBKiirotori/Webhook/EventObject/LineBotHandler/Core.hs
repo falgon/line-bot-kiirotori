@@ -6,13 +6,14 @@ module LBKiirotori.Webhook.EventObject.LineBotHandler.Core (
   , askLineUserId
   , askLineJWKSet
   , askRedisConn
+  , runRedis
 ) where
 
 import           Control.Monad.IO.Class                              (MonadIO (..))
 import           Control.Monad.Reader                                (asks)
 import qualified Data.ByteString                                     as B
 import qualified Data.Text                                           as T
-import           Database.Redis                                      (Connection)
+import qualified Database.Redis                                      as R
 
 import           LBKiirotori.Config                                  (LBKiirotoriConfig (..),
                                                                       LBKiirotoriLineConfig (..))
@@ -37,6 +38,8 @@ askLineUserId = asks $ cfgUserID . cfgLine . lbhCfg
 askLineJWKSet :: LineBotHandler B.ByteString
 askLineJWKSet = asks $ cfgJWKSet . cfgLine . lbhCfg
 
-askRedisConn :: LineBotHandler Connection
+askRedisConn :: LineBotHandler R.Connection
 askRedisConn = asks lbhRedisConn
 
+runRedis :: R.Redis a -> LineBotHandler a
+runRedis rexpr = askRedisConn >>= liftIO . flip R.runRedis rexpr

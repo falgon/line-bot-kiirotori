@@ -91,14 +91,6 @@ instance MimeUnrender WebhookJSON BL.ByteString where
 instance MimeUnrender WebhookJSON B.ByteString where
     mimeUnrender _ = Right . BL.toStrict
 
-instance MonadParallel m => MonadParallel (LoggingT m) where
-    bindM2 f ma mb = LoggingT $ \g ->
-        bindM2 ((.) (flip runLoggingT g) . f) (runLoggingT ma g) (runLoggingT mb g)
-
-instance MonadParallel Handler where
-    bindM2 f ma mb = Handler $
-        bindM2 ((.) runHandler' . f) (runHandler' ma) (runHandler' mb)
-
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-headers
 type API = "linebot"
     :> "webhook"

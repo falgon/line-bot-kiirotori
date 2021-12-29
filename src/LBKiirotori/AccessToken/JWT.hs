@@ -9,11 +9,11 @@ import           Control.Exception.Safe                         (MonadThrow (..)
                                                                  throwString)
 import           Control.Lens.Operators                         ((&), (.~),
                                                                  (?~))
-import           Control.Monad                                  (join, liftM3)
 import           Control.Monad.Error.Class                      (MonadError)
 import           Control.Monad.Except                           (ExceptT,
                                                                  runExceptT)
 import           Control.Monad.IO.Class                         (MonadIO (..))
+import           Control.Monad.Parallel                         (bindM3)
 import           Crypto.JWT                                     hiding (sign)
 import           Data.Aeson                                     (Value (..),
                                                                  eitherDecode,
@@ -82,5 +82,5 @@ sign jwkSet header claimsSet = liftIO (runExceptT $ sign' jwkSet header claimsSe
 -- | Generate channel access tokens v2.1
 -- c.f. https://developers.line.biz/en/docs/messaging-api/generate-json-web-token/#generate-jwt
 getJwt :: Scientific -> LineBotHandler SignedJWT
-getJwt = join . liftM3 sign getJwk newJwtHeader . newClaimsSet
+getJwt = bindM3 sign getJwk newJwtHeader . newClaimsSet
 

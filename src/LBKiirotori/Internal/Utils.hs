@@ -7,12 +7,15 @@ module LBKiirotori.Internal.Utils (
 
 import           Control.Arrow                   ((|||))
 import           Control.Exception.Safe          (MonadThrow (..), throwString)
+import           Control.Monad.Logger            (LoggingT (..))
+import           Control.Monad.Parallel          (MonadParallel (..))
 import           Control.Monad.Trans.Maybe       (MaybeT (..))
 import           Data.Aeson
 import qualified Data.ByteString.Lazy            as BL
 import           Data.Char                       (toLower)
 import qualified Data.Text                       as T
 import           Data.Tuple.Extra                (dupe, first, second)
+import           Servant.Server                  (Handler (..))
 
 import           LBKiirotori.Internal.Exceptions (liftMTE)
 
@@ -35,3 +38,11 @@ decodeJSON = (throwString ||| pure) . eitherDecode
 
 hoistMaybe :: Applicative m => Maybe b -> MaybeT m b
 hoistMaybe = MaybeT . pure
+
+instance MonadParallel m => MonadParallel (LoggingT m) where
+    bindM2 f ma mb = LoggingT $ \g ->
+        bindM2 ((.) (flip runLoggingT g) . f) (runLoggingT ma g) (runLoggingT mb g)
+
+instance MonadParallel Handler where
+    bindM2 f ma mb = Handler $
+        bindM2 ((.) runHandler' . f) (runHandler' ma) (runHandler' mb)

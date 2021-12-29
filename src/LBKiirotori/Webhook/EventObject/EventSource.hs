@@ -12,7 +12,7 @@ import qualified Data.Text        as T
 data LineEventSourceType = LineEventSourceTypeUser
     | LineEventSourceTypeGroup
     | LineEventSourceTypeRoom
-    deriving (Eq, Show)
+    deriving (Eq, Ord, Show, Enum)
 
 instance FromJSON LineEventSourceType where
     parseJSON (String "user")   = pure LineEventSourceTypeUser

@@ -45,8 +45,9 @@ import           Servant.Server                                 (Application,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
 
-import           LBKiirotori.AccessToken.Redis                  (newConn)
 import           LBKiirotori.Config                             (LBKiirotoriConfig (..))
+import qualified LBKiirotori.Database.Redis as Redis
+import qualified LBKiirotori.Database.MySQL as MySQL
 import           LBKiirotori.Internal.Utils                     (tshow)
 import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
@@ -140,7 +141,10 @@ loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
     -> B.ByteString
     -> Handler T.Text
 loggingServer f cfg s b = do
-    cfg <- LineBotHandlerConfig <$> newConn (cfgRedis cfg) <*> pure cfg
+    cfg <- LineBotHandlerConfig
+        <$> MySQL.newConn (cfgMySQL cfg)
+        <*> Redis.newConn (cfgRedis cfg)
+        <*> pure cfg
     hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
 
 server :: LBKiirotoriConfig -> Server API

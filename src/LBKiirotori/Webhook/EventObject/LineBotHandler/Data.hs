@@ -5,13 +5,15 @@ module LBKiirotori.Webhook.EventObject.LineBotHandler.Data (
 
 import           Control.Monad.Logger (LoggingT)
 import           Control.Monad.Reader (ReaderT)
+import           Database.MySQL.Base  (MySQLConn)
 import           Database.Redis       (Connection)
 import           Servant.Server       (Handler)
 
 import           LBKiirotori.Config   (LBKiirotoriConfig (..))
 
 data LineBotHandlerConfig = LineBotHandlerConfig {
-    lbhRedisConn :: Connection
+    lbhMySQLConn :: MySQLConn
+  , lbhRedisConn :: Connection
   , lbhCfg       :: LBKiirotoriConfig
   }
 

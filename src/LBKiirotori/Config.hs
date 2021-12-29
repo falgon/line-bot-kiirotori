@@ -9,6 +9,7 @@ module LBKiirotori.Config (
 
 import           Control.Arrow          ((|||))
 import           Control.Exception.Safe (MonadThrow (..), throwString)
+import           Control.Monad          (liftM4)
 import           Control.Monad.IO.Class (MonadIO (..))
 import           Control.Monad.Logger   (LoggingT)
 import           Control.Monad.Reader   (ReaderT, asks)
@@ -20,8 +21,8 @@ import           Data.String            (IsString (..))
 import qualified Data.Text              as T
 import qualified Data.Text.Encoding     as T
 import qualified Data.Text.IO           as T
-import           Database.Redis         (ConnectInfo (..), Connection,
-                                         PortID (..), defaultConnectInfo)
+import qualified Database.MySQL.Base    as MySQL
+import qualified Database.Redis         as Redis
 import qualified Path                   as P
 import           Servant.Server         (Handler)
 import           Text.Toml              (parseTomlDoc)
@@ -56,18 +57,19 @@ instance Monoid LBKiirotoriLineConfig where
 
 data LBKiirotoriConfig = LBKiirotoriConfig {
     cfgApp   :: LBKiirotoriAppConfig
-  , cfgRedis :: ConnectInfo
+  , cfgMySQL :: MySQL.ConnectInfo
+  , cfgRedis :: Redis.ConnectInfo
   , cfgLine  :: LBKiirotoriLineConfig
   }
   deriving stock Show
 
 #ifndef RELEASE
 instance Semigroup LBKiirotoriConfig where
-    (LBKiirotoriConfig l1 _ l3) <> (LBKiirotoriConfig r1 _ r3) =
-        LBKiirotoriConfig (l1 <> r1) defaultConnectInfo (l3 <> r3)
+    (LBKiirotoriConfig l1 _ _ l3) <> (LBKiirotoriConfig r1 _ _ r3) =
+        LBKiirotoriConfig (l1 <> r1) MySQL.defaultConnectInfo Redis.defaultConnectInfo (l3 <> r3)
 
 instance Monoid LBKiirotoriConfig where
-    mempty = LBKiirotoriConfig mempty defaultConnectInfo mempty
+    mempty = LBKiirotoriConfig mempty MySQL.defaultConnectInfo Redis.defaultConnectInfo mempty
 #endif
 
 readToml :: (MonadIO m, MonadThrow m)
@@ -102,43 +104,63 @@ lookupInteger key tb = case HM.lookup key tb of
     Just (VInteger v) -> pure $ fromIntegral v
     _                 -> throwString $ "expected integer " <> T.unpack key
 
-readRedisConfig :: MonadThrow m => Table -> m ConnectInfo
+readAppConfig :: MonadThrow m => Table -> m LBKiirotoriAppConfig
+readAppConfig = fmap LBKiirotoriAppConfig . lookupString "welcome_message"
+
+readRedisConfig :: MonadThrow m => Table -> m Redis.ConnectInfo
 readRedisConfig redisTable = do
     hostname <- lookupString "hostname" redisTable
     port <- lookupInteger "port" redisTable
-        <&> PortNumber
+        <&> Redis.PortNumber
     password <- lookupString "password" redisTable
         <&> \x -> if x == mempty then Nothing else Just x
     select <- lookupInteger "select" redisTable
     maxConn <- lookupInteger "max_connections" redisTable
     maxIdle <- lookupInteger "max_idle_time" redisTable
         <&> fromInteger
-    pure $ defaultConnectInfo {
-        connectHost = hostname
-      , connectPort = port
-      , connectAuth = password
-      , connectDatabase = select
-      , connectMaxConnections = maxConn
-      , connectMaxIdleTime = maxIdle
+    pure $ Redis.defaultConnectInfo {
+        Redis.connectHost = hostname
+      , Redis.connectPort = port
+      , Redis.connectAuth = password
+      , Redis.connectDatabase = select
+      , Redis.connectMaxConnections = maxConn
+      , Redis.connectMaxIdleTime = maxIdle
       }
+
+readMySQLConfig :: MonadThrow m => Table -> m MySQL.ConnectInfo
+readMySQLConfig rdbTable = do
+    hostname <- lookupString "hostname" rdbTable
+    port <- lookupInteger "port" rdbTable
+    password <- lookupString "password" rdbTable
+    user <- lookupString "username" rdbTable
+    db <- lookupString "database" rdbTable
+    charSet <- lookupInteger "charset" rdbTable
+    pure $ MySQL.defaultConnectInfo {
+        MySQL.ciHost = hostname
+      , MySQL.ciPort = port
+      , MySQL.ciDatabase = db
+      , MySQL.ciUser = user
+      , MySQL.ciPassword = password
+      , MySQL.ciCharset = charSet
+      }
+
+readLineConfig :: MonadThrow m => Table -> m LBKiirotoriLineConfig
+readLineConfig lineTable = LBKiirotoriLineConfig
+    <$> lookupString "jwk_set_key" lineTable
+    <*> lookupString "kid" lineTable
+    <*> lookupString "channel_id" lineTable
+    <*> lookupString "channel_secret" lineTable
+    <*> lookupString "channel_name" lineTable
+    <*> lookupString "user_id" lineTable
 
 readConfig :: (MonadIO m, MonadThrow m)
     => P.SomeBase P.File
     -> m LBKiirotoriConfig
 readConfig fp = do
     tables <- readToml fp
-    appConfig <- lookupTable "app" tables
-        >>= lookupString "welcome_message"
-        <&> LBKiirotoriAppConfig
-    redisConfig <- lookupTable "redis" tables
-        >>= readRedisConfig
-    lineTable <- lookupTable "line" tables
-    lineConfig <- LBKiirotoriLineConfig
-        <$> lookupString "jwk_set_key" lineTable
-        <*> lookupString "kid" lineTable
-        <*> lookupString "channel_id" lineTable
-        <*> lookupString "channel_secret" lineTable
-        <*> lookupString "channel_name" lineTable
-        <*> lookupString "user_id" lineTable
-    pure $ LBKiirotoriConfig appConfig redisConfig lineConfig
+    liftM4 LBKiirotoriConfig
+        (lookupTable "app" tables >>= readAppConfig)
+        (lookupTable "mysql" tables >>= readMySQLConfig)
+        (lookupTable "redis" tables >>= readRedisConfig)
+        (lookupTable "line" tables >>= readLineConfig)
 

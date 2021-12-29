@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d87a630ae0d7d02562e0979fb83554800c393656882817de2087e27084fe0b86
+-- hash: db3226f5e05b7cd13bfad01ccdebe431c0ace895d1489ca90733261801ff5bf3
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -35,12 +35,13 @@ library
       LBKiirotori.AccessToken.Config
       LBKiirotori.AccessToken.Core
       LBKiirotori.AccessToken.JWT
-      LBKiirotori.AccessToken.Redis
       LBKiirotori.API.MessageErrorResp
       LBKiirotori.API.PushMessage
       LBKiirotori.API.ReplyMessage
       LBKiirotori.Config
       LBKiirotori.Data.MessageObject
+      LBKiirotori.Database.MySQL
+      LBKiirotori.Database.Redis
       LBKiirotori.Internal.Exceptions
       LBKiirotori.Internal.HTTP
       LBKiirotori.Internal.Utils
@@ -74,12 +75,14 @@ library
     , htoml
     , http-conduit
     , http-media
+    , io-streams
     , jose
     , lens
     , megaparsec
     , monad-logger
     , monad-parallel
     , mtl
+    , mysql-haskell
     , optparse-applicative
     , path
     , path-io
@@ -118,6 +121,7 @@ executable line-bot-kiirotori
     , htoml
     , http-conduit
     , http-media
+    , io-streams
     , jose
     , lens
     , line-bot-kiirotori
@@ -125,6 +129,7 @@ executable line-bot-kiirotori
     , monad-logger
     , monad-parallel
     , mtl
+    , mysql-haskell
     , optparse-applicative
     , path
     , path-io
@@ -162,6 +167,7 @@ test-suite line-bot-kiirotori-test
     , htoml
     , http-conduit
     , http-media
+    , io-streams
     , jose
     , lens
     , line-bot-kiirotori
@@ -169,6 +175,7 @@ test-suite line-bot-kiirotori-test
     , monad-logger
     , monad-parallel
     , mtl
+    , mysql-haskell
     , optparse-applicative
     , path
     , path-io

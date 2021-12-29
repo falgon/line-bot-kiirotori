@@ -18,14 +18,20 @@ Restart=on-failure
 RestartSec=30s
 
 ExecStartPre=/usr/bin/ln -s ${SITES_AVAILABLE_PATH}/${NGINX_CONF_NAME} ${SITES_ENABLE_PATH}
-ExecStartPre=/usr/bin/docker-compose -f ${APP_CONF_PATH}/redis/docker-compose.yml up -d
+ExecStartPre=/usr/bin/docker-compose \
+    -f ${APP_CONF_PATH}/docker/docker-compose.yml \
+    --project-directory=${APP_CONF_PATH}/docker \
+    up -d
 ExecStart=/usr/local/bin/line-bot-kiirotori serve   \
     --config /root/.config/lb-kiirotori/config.toml
 ExecStartPost=/bin/systemctl try-restart nginx.service
 
 ExecStop=/bin/kill -SIGTERM $MAINPID
 ExecStopPost=/usr/bin/unlink ${SITES_ENABLE_PATH}/${NGINX_CONF_NAME}
-ExecStopPost=/usr/bin/docker-compose -f ${APP_CONF_PATH}/redis/docker-compose.yml stop
+ExecStopPost=/usr/bin/docker-compose \
+    -f ${APP_CONF_PATH}/docker/docker-compose.yml \
+    --project-directory=${APP_CONF_PATH}/docker \
+    stop 
 ExecStopPost=/bin/systemctl try-restart nginx.service
 
 [Install]

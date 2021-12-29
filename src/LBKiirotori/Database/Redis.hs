@@ -1,11 +1,12 @@
 {-# LANGUAGE DataKinds, FlexibleContexts, LambdaCase, OverloadedStrings,
              ScopedTypeVariables #-}
-module LBKiirotori.AccessToken.Redis (
+module LBKiirotori.Database.Redis (
     newConn
   , writeToken
   , takeToken
   , takeValidToken
   , AccessToken (..)
+  , getPinCode
 ) where
 
 import           Control.Applicative                            (Alternative (..))

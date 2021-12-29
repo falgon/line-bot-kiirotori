@@ -2,7 +2,6 @@ module LBKiirotori.AccessToken (
     getAccessToken
   , getValidAccessTokenKIds
   , revokeCurrentAccessToken
-  , newConn
 ) where
 
 import           Control.Monad.IO.Class                         (MonadIO (..))
@@ -13,7 +12,7 @@ import           Data.Time.Clock                                (getCurrentTime)
 import           Database.Redis                                 (Connection)
 
 import           LBKiirotori.AccessToken.Core
-import           LBKiirotori.AccessToken.Redis
+import           LBKiirotori.Database.Redis
 import           LBKiirotori.Internal.Utils
 import           LBKiirotori.Webhook.EventObject.LineBotHandler (LineBotHandler,
                                                                  askLineChanId,

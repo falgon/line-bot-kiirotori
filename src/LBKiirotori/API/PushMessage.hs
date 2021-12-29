@@ -16,9 +16,9 @@ import           Network.HTTP.Conduit             (RequestBody (..),
                                                    requestHeaders)
 import           Network.HTTP.Simple
 
-import           LBKiirotori.AccessToken.Redis    (AccessToken (..))
 import           LBKiirotori.API.MessageErrorResp
 import           LBKiirotori.Data.MessageObject
+import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP
 
 reqPushMessage :: B.ByteString -> PushMessage ->  Request

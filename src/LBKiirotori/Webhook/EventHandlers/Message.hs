@@ -11,13 +11,15 @@ import           Control.Monad.Extra                            (ifM)
 import           Control.Monad.IO.Class                         (MonadIO (..))
 import           Control.Monad.Logger                           (logError,
                                                                  logInfo)
-import           Control.Monad.Reader                           (asks)
+import           Control.Monad.Reader                           (ReaderT (..),
+                                                                 asks)
 import           Control.Monad.Trans                            (lift)
 import           Control.Monad.Trans.Maybe                      (MaybeT (..))
 import           Data.Foldable                                  (asum)
 import           Data.Functor                                   ((<&>))
 import qualified Data.Text                                      as T
 import qualified Data.Text.Encoding                             as T
+import           Data.Time.LocalTime                            (LocalTime)
 import qualified Data.Vector                                    as V
 import           Data.Void
 import           Database.MySQL.Base                            (MySQLValue (..))
@@ -69,14 +71,21 @@ repliedMe mobj = runMaybeT $
         >>= M.runParserT repliedMeParser mempty
         >>= (lift . throwString . M.errorBundlePretty ||| hoistMaybe)
 
+data MessageEventData = MessageEventData {
+    medTk  :: T.Text
+  , medLEO :: LineEventObject
+  }
+
+type MessageEvent a = M.ParsecT Void T.Text (ReaderT MessageEventData LineBotHandler) a
+
 -- | the echo command, echo the sent message as it is
 -- <echo> ::= "echo" <space> <string>
-echoCmd :: T.Text
-    -> M.ParsecT Void T.Text LineBotHandler ()
-echoCmd tk = do
+echoCmd :: MessageEvent ()
+echoCmd = do
     void (MC.string' "echo" *> MC.space1)
     txtBody <- M.getInput
-    lift $ do
+    tk <- lift $ asks medTk
+    lift $ lift $ do
         $(logInfo) "requested echo command, send reply message"
         ca <- getAccessToken
         replyMessage ca $ ReplyMessage {
@@ -87,38 +96,38 @@ echoCmd tk = do
           , replyMessageNotificationDisabled = Nothing
           }
 
--- | the pincode command, authenticate the code and register it in db if successful
-    {-
-pinCodeCmd :: T.Text
-    -> LineEventObject
-    -> M.ParsecT Void T.Text LineBotHandler ()
-pinCodeCmd tk leo = case authId of
-    Nothing -> lift $ throwString "need to be able to get the id of one of user, group, room"
-    Just aId -> do
-        tryCode <- MC.string' "pincode" *> MC.space1 *> M.getInput
-        lift $ do
-            code <- getPinCode
-            qres <- runSQL q [ MySQLText aId, MySQLInt8U $ fromIntegral srcType ]
+authed :: T.Text -> MessageEvent (Maybe (LocalTime, T.Text, T.Text))
+authed tryCode = do
+    src <- lift $ asks $ lineEventSource . medLEO
+    case asum [ lineEventSrcUserId src, lineEventSrcGroupId src, lineEventSrcRoomId src ] of
+        Nothing -> lift $ lift $
+            throwString "need to be able to get the id of one of user, group, room"
+        Just aId -> lift $ lift $ do
+            qres <- runSQL q [
+                MySQLText aId
+              , MySQLInt8U $ fromIntegral $ fromEnum $ lineEventSrcType src
+              ]
                 >>= liftIO . S.toList . snd
                 <&> V.concat
-            if V.length qres /= 3 then pure () else pure ()
+            if V.length qres /= 3 then pure Nothing else pure Nothing
     where
-        src = lineEventSource leo
-        authId = asum [
-            lineEventSrcUserId src
-          , lineEventSrcGroupId src
-          , lineEventSrcRoomId src
-          ]
-        srcType = fromEnum $ lineEventSrcType src
         q = "select created_at, group_name, authed_user_name from authorized where id = ? and type = ?"
--}
-pinCodeCmd = undefined
 
-helpCmd :: T.Text
-    -> M.ParsecT Void T.Text LineBotHandler ()
-helpCmd tk = do
+-- | the pincode command, authenticate the code and register it in db if successful
+-- <pincode> ::= "pincode" <space> <string>
+pinCodeCmd :: MessageEvent ()
+pinCodeCmd = do
+    tryCode <- MC.string' "pincode" *> MC.space1 *> M.getInput
+    authedInfo <- authed tryCode
+    src <- lift $ asks $ lineEventSource . medLEO
+    tk <- lift $ asks medTk
+    pure ()
+
+helpCmd :: MessageEvent ()
+helpCmd = do
     void (lexeme (MC.string' "help") *> M.eof)
-    lift $ do
+    tk <- lift $ asks medTk
+    lift $ lift $ do
         $(logInfo) "requested help command, send reply message"
         ca <- getAccessToken
         replyMessage ca $ ReplyMessage {
@@ -132,13 +141,11 @@ helpCmd tk = do
 -- <cmd> ::= <echo>
 --     | <pincode>
 --     | <help>
-cmd :: T.Text
-    -> LineEventObject
-    -> M.ParsecT Void T.Text LineBotHandler ()
-cmd tk lem = M.choice [
-    M.try $ echoCmd tk
-  -- , M.try $ pinCodeCmd tk lem
-  , M.try $ helpCmd tk
+cmd :: MessageEvent ()
+cmd = M.choice [
+    M.try echoCmd
+  -- , M.try pinCodeCmd
+  , M.try helpCmd
   , pure ()
   ]
 
@@ -150,9 +157,10 @@ messageEvent e
             Nothing -> $(logError) "expected reply token and message object"
             Just (tk, mobj) -> repliedMe mobj >>= \case
                 Nothing -> $(logInfo) "the message is not replied me"
-                Just txtBody -> M.runParserT (cmd tk e) mempty txtBody >>= \case
-                    Left err -> $(logError) $ T.pack $ M.errorBundlePretty err
-                    Right () -> pure ()
+                Just txtBody ->
+                    runReaderT (M.runParserT cmd mempty txtBody) (MessageEventData tk e) >>= \case
+                        Left err -> $(logError) $ T.pack $ M.errorBundlePretty err
+                        Right () -> pure ()
     | otherwise = $(logError) "expected message event"
         >> $(logError) (tshow e)
 

@@ -6,7 +6,6 @@ module LBKiirotori.Webhook.EventHandlers.Message.Commands.Auth (
 import           Control.Applicative                              (Alternative (..))
 import           Control.Arrow                                    ((&&&), (|||))
 import           Control.Exception.Safe                           (throwString)
-import           Control.Lens.Lens                                ((??))
 import           Control.Monad                                    (unless)
 import           Control.Monad                                    (join, liftM2,
                                                                    void)
@@ -18,7 +17,6 @@ import           Control.Monad.Logger                             (logError,
 import           Control.Monad.Reader                             (ReaderT (..),
                                                                    asks)
 import           Control.Monad.Trans                              (lift)
-import           Data.Foldable                                    (asum)
 import           Data.Functor                                     ((<&>))
 import qualified Data.Text                                        as T
 import           Data.Time.LocalTime                              (LocalTime)
@@ -55,11 +53,18 @@ import           LBKiirotori.Webhook.EventObject.LineBotHandler   (executeSQL,
                                                                    runSQL)
 
 anyId :: MessageEvent T.Text
-anyId = lift (asks $ lineEventSource . medLEO)
-    >>= fromMaybeM
-        (lift $ lift $ throwString "need to be able to get the id of one of user, group, room")
-        . asum
-        . ([ lineEventSrcUserId, lineEventSrcGroupId, lineEventSrcRoomId ] ??)
+anyId = do
+    src <- lift $ asks $ lineEventSource . medLEO
+    case lineEventSrcType src of
+        LineEventSourceTypeUser -> fromMaybeM
+            (lift $ lift $ throwString "need to be able to get the id of one of user")
+            $ lineEventSrcUserId src
+        LineEventSourceTypeGroup -> fromMaybeM
+            (lift $ lift $ throwString "need to be able to get the id of one of group")
+            $ lineEventSrcGroupId src
+        LineEventSourceTypeRoom -> fromMaybeM
+            (lift $ lift $ throwString "need to be able to get the id of one of room")
+            $ lineEventSrcRoomId src
 
 srcTypeVal :: Integral i => MessageEvent i
 srcTypeVal = lift $ asks $

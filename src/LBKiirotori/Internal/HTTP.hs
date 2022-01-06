@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.Internal.HTTP (
     reqMessage
+  , reqProfile
 ) where
 
 import           Data.Aeson
@@ -28,3 +29,7 @@ reqMessage endpoint token pm = setRequestMethod "POST"
     $ setRequestBodyJSON pm
     $ parseRequest_ endpoint
 
+reqProfile :: EndPoint -> B.ByteString -> Request
+reqProfile endpoint token = setRequestMethod "GET"
+    $ setRequestBearerAuth token
+    $ parseRequest_ endpoint

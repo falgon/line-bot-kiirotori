@@ -20,7 +20,7 @@ import           Network.HTTP.Simple
 import           LBKiirotori.API.MessageErrorResp
 import           LBKiirotori.Data.MessageObject
 import           LBKiirotori.Database.Redis       (AccessToken (..))
-import           LBKiirotori.Internal.HTTP
+import           LBKiirotori.Internal.HTTP        (reqMessage)
 import           LBKiirotori.Internal.Utils       (stripFirstToLowerLabeledOption)
 
 data ReplyMessage = ReplyMessage {

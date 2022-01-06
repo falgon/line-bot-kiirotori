@@ -9,6 +9,7 @@ module LBKiirotori.Webhook.EventObject.LineBotHandler.Core (
   , askRedisConn
   , runSQL
   , runSQL_
+  , executeSQL
   , runRedis
 ) where
 
@@ -17,7 +18,7 @@ import           Control.Monad.Reader                                (asks)
 import qualified Data.ByteString                                     as B
 import qualified Data.Text                                           as T
 import           Data.Vector                                         (Vector)
-import           Database.MySQL.Base                                 as M
+import qualified Database.MySQL.Base                                 as M
 import qualified Database.Redis                                      as R
 import           System.IO.Streams                                   (InputStream)
 
@@ -50,19 +51,24 @@ askMySQLConn = asks lbhMySQLConn
 askRedisConn :: LineBotHandler R.Connection
 askRedisConn = asks lbhRedisConn
 
-runSQL :: QueryParam p
+runSQL :: M.QueryParam p
     => M.Query
     -> [p]
     -> LineBotHandler (Vector M.ColumnDef, InputStream (Vector M.MySQLValue))
-runSQL q p = do
-    conn <- askMySQLConn
-    liftIO $ queryVector conn q p
+runSQL q p = askMySQLConn
+    >>= liftIO . flip (flip M.queryVector q) p
 
 runSQL_ :: M.Query
     -> LineBotHandler (Vector M.ColumnDef, InputStream (Vector M.MySQLValue))
-runSQL_ q = do
-    conn <- askMySQLConn
-    liftIO $ queryVector_ conn q
+runSQL_ q = askMySQLConn
+    >>= liftIO . flip M.queryVector_ q
+
+executeSQL :: M.QueryParam p
+    => M.Query
+    -> [p]
+    -> LineBotHandler M.OK
+executeSQL q p = askMySQLConn
+    >>= liftIO . flip (flip M.execute q) p
 
 runRedis :: R.Redis a -> LineBotHandler a
 runRedis rexpr = askRedisConn >>= liftIO . flip R.runRedis rexpr

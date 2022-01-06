@@ -22,7 +22,7 @@ data MessageEventData = MessageEventData {
   , medLEO :: LineEventObject
   }
 
-type MessageEvent a = M.ParsecT Void T.Text (ReaderT MessageEventData LineBotHandler) a
+type MessageEvent = M.ParsecT Void T.Text (ReaderT MessageEventData LineBotHandler)
 
 runMessageEvent :: MessageEvent ()
     -> MessageEventData

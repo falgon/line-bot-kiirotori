@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
-module LBKiirotori.API.Profile.FriendUser (
-    profileFriendUser
-  , ProfileFriendUserResp (..)
+module LBKiirotori.API.Count.Room (
+    countRoom
+  , CountRoomResp (..)
 ) where
 
 import           Control.Arrow                    ((&&&), (|||))
@@ -13,8 +13,7 @@ import           Data.Aeson.Types
 import qualified Data.ByteString                  as B
 import qualified Data.Text                        as T
 import           GHC.Generics
-import           Network.HTTP.Conduit             (RequestBody (..),
-                                                   requestHeaders)
+import           Network.HTTP.Conduit             (RequestBody (..))
 import           Network.HTTP.Simple
 
 import           LBKiirotori.API.MessageErrorResp
@@ -23,32 +22,34 @@ import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP        (reqGet)
 import           LBKiirotori.Internal.Utils       (decodeJSON, stripFirstToLowerLabeledOption)
 
-data ProfileFriendUserResp = ProfileFriendUserResp {
-    pfuDisplayName   :: T.Text
-  , pfuUserId        :: T.Text
-  , pfuLanguage      :: T.Text
-  , pfuPictureUrl    :: T.Text
-  , pfuStatusMessage :: T.Text
+data CountRoomResp = CountRoomResp {
+    cmCount :: Int
   } deriving (Eq, Show, Generic)
 
-instance ToJSON ProfileFriendUserResp where
-    toJSON = genericToJSON $ stripFirstToLowerLabeledOption 3
+instance ToJSON CountRoomResp where
+    toJSON = genericToJSON $ stripFirstToLowerLabeledOption 2
 
-instance FromJSON ProfileFriendUserResp where
-    parseJSON (Object v) = ProfileFriendUserResp
-        <$> v .: "displayName"
-        <*> v .: "userId"
-        <*> v .: "language"
-        <*> v .: "pictureUrl"
-        <*> v .: "statusMessage"
+instance FromJSON CountRoomResp where
+    parseJSON (Object v) = CountRoomResp
+        <$> v .: "count"
 
-reqGetFriendUser :: String -> B.ByteString -> Request
-reqGetFriendUser userId = reqGet ("https://api.line.me/v2/bot/profile/" <> userId)
+reqCountRoom :: String
+        -> B.ByteString
+        -> Request
+reqCountRoom roomId = reqGet
+    $ mconcat [
+        "https://api.line.me/v2/bot/room/"
+      , roomId
+      , "/members/count"
+      ]
 
-profileFriendUser :: (MonadThrow m, MonadIO m) => AccessToken -> String -> m ProfileFriendUserResp
-profileFriendUser token userId = do
+countRoom :: (MonadThrow m, MonadIO m)
+        => AccessToken
+        -> String
+        -> m CountRoomResp
+countRoom token roomId = do
     (statusCode, body) <- (getResponseStatusCode &&& getResponseBody)
-        <$> httpLbs (reqGetFriendUser userId (atToken token))
+        <$> httpLbs (reqCountRoom roomId (atToken token))
     if statusCode == 200 then decodeJSON body
     else throwString ||| throw
         $ (eitherDecode body :: Either String MessageErrorResp)

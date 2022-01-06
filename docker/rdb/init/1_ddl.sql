@@ -5,7 +5,7 @@ create table if not exists authorized (
     id varchar(33) not null comment "user id (U[0-9a-f]{32}), group id (C[0-9a-f]{32}), room id (R[0-9a-f]{32})",
     type tinyint unsigned not null comment "id type: user (0), group (1) or room (2)",
     created_at datetime not null comment "authorized datetime",
-    name varchar(80) not null comment "authed name (user, group or room)", -- 4 bytes * 20 characters
+    name varchar(80) not null comment "authed name (user, group, room)", -- 4 bytes * 20 characters
     primary key (id, type)
 ) engine=InnoDB default charset=utf8mb4;
 

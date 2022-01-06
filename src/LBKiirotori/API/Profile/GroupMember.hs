@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
-module LBKiirotori.API.Profile.FriendUser (
-    profileFriendUser
-  , ProfileFriendUserResp (..)
+module LBKiirotori.API.Profile.GroupMember (
+    profileGroupMember
+  , ProfileGroupMemberResp (..)
 ) where
 
 import           Control.Arrow                    ((&&&), (|||))
@@ -23,32 +23,41 @@ import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP        (reqGet)
 import           LBKiirotori.Internal.Utils       (decodeJSON, stripFirstToLowerLabeledOption)
 
-data ProfileFriendUserResp = ProfileFriendUserResp {
-    pfuDisplayName   :: T.Text
-  , pfuUserId        :: T.Text
-  , pfuLanguage      :: T.Text
-  , pfuPictureUrl    :: T.Text
-  , pfuStatusMessage :: T.Text
+data ProfileGroupMemberResp = ProfileGroupMemberResp {
+    pgmDisplayName :: T.Text
+  , pgmUserId      :: T.Text
+  , pgmPictureUrl  :: T.Text
   } deriving (Eq, Show, Generic)
 
-instance ToJSON ProfileFriendUserResp where
+instance ToJSON ProfileGroupMemberResp where
     toJSON = genericToJSON $ stripFirstToLowerLabeledOption 3
 
-instance FromJSON ProfileFriendUserResp where
-    parseJSON (Object v) = ProfileFriendUserResp
+instance FromJSON ProfileGroupMemberResp where
+    parseJSON (Object v) = ProfileGroupMemberResp
         <$> v .: "displayName"
         <*> v .: "userId"
-        <*> v .: "language"
         <*> v .: "pictureUrl"
-        <*> v .: "statusMessage"
 
-reqGetFriendUser :: String -> B.ByteString -> Request
-reqGetFriendUser userId = reqGet ("https://api.line.me/v2/bot/profile/" <> userId)
+reqProfileGroupMember :: String
+        -> String
+        -> B.ByteString
+        -> Request
+reqProfileGroupMember userId groupId = reqGet
+    $ mconcat [
+        "https://api.line.me/v2/bot/group/"
+      , groupId
+      , "/member/"
+      , userId
+      ]
 
-profileFriendUser :: (MonadThrow m, MonadIO m) => AccessToken -> String -> m ProfileFriendUserResp
-profileFriendUser token userId = do
+profileGroupMember :: (MonadThrow m, MonadIO m)
+        => AccessToken
+        -> String
+        -> String
+        -> m ProfileGroupMemberResp
+profileGroupMember token userId groupId = do
     (statusCode, body) <- (getResponseStatusCode &&& getResponseBody)
-        <$> httpLbs (reqGetFriendUser userId (atToken token))
+        <$> httpLbs (reqProfileGroupMember userId groupId (atToken token))
     if statusCode == 200 then decodeJSON body
     else throwString ||| throw
         $ (eitherDecode body :: Either String MessageErrorResp)

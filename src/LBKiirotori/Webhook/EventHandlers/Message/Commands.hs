@@ -15,7 +15,7 @@ import           LBKiirotori.Webhook.EventHandlers.Message.Event         (Messag
 cmd :: MessageEvent ()
 cmd = M.choice [
     M.try echoCmd
-  -- , M.try authCmd
+  , M.try authCmd
   , M.try helpCmd
   , pure ()
   ]

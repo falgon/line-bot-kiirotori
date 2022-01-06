@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
-module LBKiirotori.API.Profile.FriendUser (
-    profileFriendUser
-  , ProfileFriendUserResp (..)
+module LBKiirotori.API.Profile.RoomMember (
+    profileRoomMember
+  , ProfileRoomMemberResp (..)
 ) where
 
 import           Control.Arrow                    ((&&&), (|||))
@@ -23,32 +23,41 @@ import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP        (reqGet)
 import           LBKiirotori.Internal.Utils       (decodeJSON, stripFirstToLowerLabeledOption)
 
-data ProfileFriendUserResp = ProfileFriendUserResp {
-    pfuDisplayName   :: T.Text
-  , pfuUserId        :: T.Text
-  , pfuLanguage      :: T.Text
-  , pfuPictureUrl    :: T.Text
-  , pfuStatusMessage :: T.Text
+data ProfileRoomMemberResp = ProfileRoomMemberResp {
+    prmDisplayName :: T.Text
+  , prmUserId      :: T.Text
+  , prmPictureUrl  :: T.Text
   } deriving (Eq, Show, Generic)
 
-instance ToJSON ProfileFriendUserResp where
+instance ToJSON ProfileRoomMemberResp where
     toJSON = genericToJSON $ stripFirstToLowerLabeledOption 3
 
-instance FromJSON ProfileFriendUserResp where
-    parseJSON (Object v) = ProfileFriendUserResp
+instance FromJSON ProfileRoomMemberResp where
+    parseJSON (Object v) = ProfileRoomMemberResp
         <$> v .: "displayName"
         <*> v .: "userId"
-        <*> v .: "language"
         <*> v .: "pictureUrl"
-        <*> v .: "statusMessage"
 
-reqGetFriendUser :: String -> B.ByteString -> Request
-reqGetFriendUser userId = reqGet ("https://api.line.me/v2/bot/profile/" <> userId)
+reqProfileRoomMember :: String
+        -> String
+        -> B.ByteString
+        -> Request
+reqProfileRoomMember userId roomId = reqGet
+    $ mconcat [
+        "https://api.line.me/v2/bot/room/"
+      , roomId
+      , "/member/"
+      , userId
+      ]
 
-profileFriendUser :: (MonadThrow m, MonadIO m) => AccessToken -> String -> m ProfileFriendUserResp
-profileFriendUser token userId = do
+profileRoomMember :: (MonadThrow m, MonadIO m)
+        => AccessToken
+        -> String
+        -> String
+        -> m ProfileRoomMemberResp
+profileRoomMember token userId roomId = do
     (statusCode, body) <- (getResponseStatusCode &&& getResponseBody)
-        <$> httpLbs (reqGetFriendUser userId (atToken token))
+        <$> httpLbs (reqProfileRoomMember userId roomId (atToken token))
     if statusCode == 200 then decodeJSON body
     else throwString ||| throw
         $ (eitherDecode body :: Either String MessageErrorResp)

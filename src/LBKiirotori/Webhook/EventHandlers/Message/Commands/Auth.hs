@@ -93,8 +93,8 @@ authSuccess = do
     (r, c) <- lift $ lift $ ((== 1) . okAffectedRows &&& (== 0) . okWarningCnt) <$> executeSQL q [
         insertId
       , srcType
-      , dispName
       , currentLocalTime
+      , dispName
       ]
     if not r then lift $ lift $ throwString "expected only 1 row"
     else unless c $ lift $ lift $ $(logWarn) "There was a warning on insert into `authorized` table!"

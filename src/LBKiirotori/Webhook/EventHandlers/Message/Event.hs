@@ -7,8 +7,8 @@ module LBKiirotori.Webhook.EventHandlers.Message.Event (
 
 import           Control.Arrow                                  ((|||))
 import           Control.Monad.Logger                           (logError)
-import           Control.Monad.Reader                           (ReaderT (..))
-import           Control.Monad.Trans.Reader                     (ReaderT (..))
+import           Control.Monad.Trans.State                      (StateT,
+                                                                 evalStateT)
 import qualified Data.Text                                      as T
 import           Data.Void                                      (Void)
 import qualified Text.Megaparsec                                as M
@@ -18,15 +18,15 @@ import           LBKiirotori.Webhook.EventObject.EventMessage   (LineEventMessag
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
 data MessageEventData = MessageEventData {
-    medTk  :: T.Text
+    medTk  :: Maybe T.Text
   , medLEO :: LineEventObject
   }
 
-type MessageEvent = M.ParsecT Void T.Text (ReaderT MessageEventData LineBotHandler)
+type MessageEvent = M.ParsecT Void T.Text (StateT MessageEventData LineBotHandler)
 
 runMessageEvent :: MessageEvent ()
     -> MessageEventData
     -> T.Text
     -> LineBotHandler ()
-runMessageEvent cmd evData txtBody = runReaderT (M.runParserT cmd mempty txtBody) evData
+runMessageEvent cmd evData txtBody = evalStateT (M.runParserT cmd mempty txtBody) evData
     >>= (($(logError) . T.pack . M.errorBundlePretty) ||| pure)

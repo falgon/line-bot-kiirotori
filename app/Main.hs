@@ -63,15 +63,3 @@ main = do
     putStrLn "boot server..."
         >> readConfig (optConfigPath opts)
         >>= run 48080 . kiirotoriApp
-
-{-
-    conn <- newConn
-    token <- getAccessTokenIO conn
-    userId <- getEnv "USER_ID"
-    pushMessage token $ PushMessage {
-        to = T.pack userId
-      , messages = [
-            MBText $ textMessage "pi!" Nothing Nothing
-          ]
-      }
--}

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 module LBKiirotori.API.PushMessage (
-    pushMessage
+    PushMessage (..)
+  , pushMessage
 ) where
 
 import           Control.Arrow                    ((&&&), (|||))

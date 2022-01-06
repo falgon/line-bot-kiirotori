@@ -15,15 +15,12 @@ import           Control.Monad.IO.Class                           (MonadIO (..))
 import           Control.Monad.Logger                             (logError,
                                                                    logInfo,
                                                                    logWarn)
-import           Control.Monad.Parallel                           (bindM2)
 import           Control.Monad.Reader                             (ReaderT (..),
                                                                    asks)
 import           Control.Monad.Trans                              (lift)
 import           Data.Foldable                                    (asum)
 import           Data.Functor                                     ((<&>))
-import           Data.Maybe                                       (fromMaybe)
 import qualified Data.Text                                        as T
-import qualified Data.Text.Encoding                               as T
 import           Data.Time.LocalTime                              (LocalTime)
 import qualified Data.Vector                                      as V
 import           Data.Void
@@ -32,14 +29,16 @@ import           Database.MySQL.Base                              (MySQLValue (.
 import qualified System.IO.Streams                                as S
 import qualified Text.Megaparsec                                  as M
 import qualified Text.Megaparsec.Char                             as MC
-import qualified Text.Megaparsec.Char.Lexer                       as MCL
 
 import           LBKiirotori.AccessToken                          (getAccessToken)
 import           LBKiirotori.API.Count.Room
 import           LBKiirotori.API.Profile.FriendUser
+import           LBKiirotori.API.PushMessage
 import           LBKiirotori.API.Summary.Group
 import           LBKiirotori.Config                               (LBKiirotoriAppConfig (..),
                                                                    LBKiirotoriConfig (..))
+import           LBKiirotori.Data.MessageObject                   (MessageBody (..),
+                                                                   textMessage)
 import           LBKiirotori.Database.Redis                       (getPinCode)
 import           LBKiirotori.Internal.Utils                       (fromMaybeM, getCurrentLocalTime,
                                                                    hoistMaybe,
@@ -115,6 +114,17 @@ authSuccess :: MessageEvent ()
 authSuccess = authSuccessQuery
     *> replyOneText "認証成功ピ!"
 
+authFailed :: MessageEvent ()
+authFailed = do
+    ca <- lift $ lift getAccessToken
+    aId <- anyId
+    liftIO $ pushMessage ca $ PushMessage {
+        pmTo = aId
+      , pmMessages = [
+            MBText $ textMessage "認証コードが違うピ，認証に失敗ピ" Nothing Nothing
+          ]
+      }
+
 -- | the auth command, authenticate the code and register it in db if successful
 -- <auth> ::= "auth" <space> (<space>*) <string>
 authCmd :: MessageEvent ()
@@ -124,5 +134,4 @@ authCmd = (MC.string' "auth" *> lexeme MC.space1 *> checkAuthed) >>= \case
     Nothing -> replyOneText "認証中..."
         *> ifM ((==) <$> M.getInput <*> lift (lift getPinCode))
             authSuccess
-            (replyOneText "認証コードが違うピ，認証に失敗ピ")
-
+            authFailed

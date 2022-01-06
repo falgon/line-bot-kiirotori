@@ -27,8 +27,8 @@ data ProfileFriendUserResp = ProfileFriendUserResp {
     pfuDisplayName   :: T.Text
   , pfuUserId        :: T.Text
   , pfuLanguage      :: T.Text
-  , pfuPictureUrl    :: T.Text
-  , pfuStatusMessage :: T.Text
+  , pfuPictureUrl    :: Maybe T.Text
+  , pfuStatusMessage :: Maybe T.Text
   } deriving (Eq, Show, Generic)
 
 instance ToJSON ProfileFriendUserResp where
@@ -39,8 +39,8 @@ instance FromJSON ProfileFriendUserResp where
         <$> v .: "displayName"
         <*> v .: "userId"
         <*> v .: "language"
-        <*> v .: "pictureUrl"
-        <*> v .: "statusMessage"
+        <*> v .:? "pictureUrl"
+        <*> v .:? "statusMessage"
 
 reqGetFriendUser :: String -> B.ByteString -> Request
 reqGetFriendUser userId = reqGet ("https://api.line.me/v2/bot/profile/" <> userId)

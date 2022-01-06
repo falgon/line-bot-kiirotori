@@ -3,9 +3,10 @@ module LBKiirotori.API.PushMessage (
     pushMessage
 ) where
 
-import           Control.Arrow                    ((|||))
+import           Control.Arrow                    ((&&&), (|||))
 import           Control.Exception.Safe           (Exception, MonadThrow (..),
                                                    throw, throwString)
+import           Control.Monad                    (unless)
 import           Control.Monad.IO.Class           (MonadIO (..))
 import           Data.Aeson
 import           Data.Aeson.Types
@@ -20,22 +21,23 @@ import           LBKiirotori.API.MessageErrorResp
 import           LBKiirotori.Data.MessageObject
 import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP        (reqMessage)
+import           LBKiirotori.Internal.Utils       (stripFirstToLowerLabeledOption)
 
 reqPushMessage :: B.ByteString -> PushMessage ->  Request
 reqPushMessage = reqMessage "https://api.line.me/v2/bot/message/push"
 
 data PushMessage = PushMessage {
-    to       :: T.Text
-  , messages :: Messages
+    pmTo       :: T.Text
+  , pmMessages :: Messages
   } deriving (Show, Generic)
 
-instance ToJSON PushMessage
+instance ToJSON PushMessage where
+    toJSON = genericToJSON $ stripFirstToLowerLabeledOption 2
 
 pushMessage :: (MonadThrow m, MonadIO m) => AccessToken -> PushMessage -> m ()
 pushMessage token pm = do
-    resp <- httpLbs (reqPushMessage (atToken token) pm)
-    if getResponseStatusCode resp == 200 then
-        pure ()
-    else
+    (statusCode, body) <- (getResponseStatusCode &&& getResponseBody)
+        <$> httpLbs (reqPushMessage (atToken token) pm)
+    unless (statusCode == 200) $
         throwString ||| throw
-            $ (eitherDecode (getResponseBody resp) :: Either String MessageErrorResp)
+            $ (eitherDecode body :: Either String MessageErrorResp)

@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 module LBKiirotori.API.Profile.FriendUser (
     profileFriendUser
+  , ProfileFriendUserResp (..)
 ) where
 
-import           Control.Arrow                    ((|||))
-import           Control.Arrow                    ((&&&))
+import           Control.Arrow                    ((&&&), (|||))
 import           Control.Exception.Safe           (Exception, MonadThrow (..),
                                                    throw, throwString)
 import           Control.Monad.IO.Class           (MonadIO (..))
@@ -21,14 +21,34 @@ import           LBKiirotori.API.MessageErrorResp
 import           LBKiirotori.Data.MessageObject
 import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP        (reqProfile)
+import           LBKiirotori.Internal.Utils       (decodeJSON, stripFirstToLowerLabeledOption)
+
+data ProfileFriendUserResp = ProfileFriendUserResp {
+    pfuDisplayName   :: T.Text
+  , pfuUserId        :: T.Text
+  , pfuLanguage      :: T.Text
+  , pfuPictureUrl    :: T.Text
+  , pfuStatusMessage :: T.Text
+  } deriving (Eq, Show, Generic)
+
+instance ToJSON ProfileFriendUserResp where
+    toJSON = genericToJSON $ stripFirstToLowerLabeledOption 3
+
+instance FromJSON ProfileFriendUserResp where
+    parseJSON (Object v) = ProfileFriendUserResp
+        <$> v .: "displayName"
+        <*> v .: "userId"
+        <*> v .: "language"
+        <*> v .: "pictureUrl"
+        <*> v .: "statusMessage"
 
 reqProfileFriendUser :: String -> B.ByteString -> Request
 reqProfileFriendUser userId = reqProfile ("https://api.line.me/v2/bot/profile/" <> userId)
 
-profileFriendUser :: (MonadThrow m, MonadIO m) => AccessToken -> String -> m ()
+profileFriendUser :: (MonadThrow m, MonadIO m) => AccessToken -> String -> m ProfileFriendUserResp
 profileFriendUser token userId = do
-    (statusCode, body) <- (getResponseStatusCode &&& (eitherDecode . getResponseBody))
+    (statusCode, body) <- (getResponseStatusCode &&& getResponseBody)
         <$> httpLbs (reqProfileFriendUser userId (atToken token))
-    if statusCode == 200 then pure ()
+    if statusCode == 200 then decodeJSON body
     else throwString ||| throw
-        $ (body :: Either String MessageErrorResp)
+        $ (eitherDecode body :: Either String MessageErrorResp)

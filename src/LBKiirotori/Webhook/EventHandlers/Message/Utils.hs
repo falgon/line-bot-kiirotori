@@ -1,7 +1,8 @@
 {-# LANGUAGE LambdaCase #-}
 module LBKiirotori.Webhook.EventHandlers.Message.Utils (
-    anyId
+    srcId
   , replyOneText
+  , replyText
 ) where
 
 import           Control.Exception.Safe                          (throwString)
@@ -22,36 +23,38 @@ import           LBKiirotori.Webhook.EventObject.Core            (LineEventObjec
 import           LBKiirotori.Webhook.EventObject.EventSource     (LineEventSource (..),
                                                                   LineEventSourceType (..))
 
-anyId :: MessageEvent T.Text
-anyId = do
+srcId :: MessageEvent T.Text
+srcId = do
     src <- lift $ gets $ lineEventSource . medLEO
     case lineEventSrcType src of
-        LineEventSourceTypeUser -> fromMaybeM
-            (lift $ lift $ throwString "need to be able to get the id of one of user")
-            $ lineEventSrcUserId src
-        LineEventSourceTypeGroup -> fromMaybeM
-            (lift $ lift $ throwString "need to be able to get the id of one of group")
-            $ lineEventSrcGroupId src
-        LineEventSourceTypeRoom -> fromMaybeM
-            (lift $ lift $ throwString "need to be able to get the id of one of room")
-            $ lineEventSrcRoomId src
+        LineEventSourceTypeUser  -> idRecord "user" lineEventSrcUserId src
+        LineEventSourceTypeGroup -> idRecord "group" lineEventSrcGroupId src
+        LineEventSourceTypeRoom  -> idRecord "room" lineEventSrcRoomId src
+        where
+            idRecord s f src = fromMaybeM
+                (lift $ lift $ throwString $ mconcat [ "need to be able to get the id of ", s ])
+                $ f src
 
 replyTextData :: [T.Text] -> MessageEvent (Maybe ReplyMessage)
 replyTextData txts = lift (gets medTk) >>= \case
-    Just tk -> (pure $ Just $ ReplyMessage {
-        replyMessageReplyToken = tk
-      , replyMessageMessages = map (\x -> MBText $ textMessage x Nothing Nothing) txts
-      , replyMessageNotificationDisabled = Nothing
-      }) <* lift (modify (\d -> d { medTk = Nothing }))
+    Just tk -> Just (replyData tk)
+        <$ lift (modify (\d -> d { medTk = Nothing }))
     Nothing -> pure Nothing
+    where
+        replyData tk = ReplyMessage {
+            replyMessageReplyToken = tk
+          , replyMessageMessages = map (\x -> MBText $ textMessage x Nothing Nothing) txts
+          , replyMessageNotificationDisabled = Nothing
+          }
 
 replyText :: [T.Text] -> MessageEvent ()
 replyText txts = replyTextData txts >>= \case
-    Just rot -> (lift $ lift getAccessToken) >>= lift . flip replyMessage rot
-    Nothing -> do
-        ca <- lift $ lift getAccessToken
-        aId <- anyId
-        liftIO $ pushMessage ca $ PushMessage {
+    Just rot -> lift (lift getAccessToken)
+        >>= lift . flip replyMessage rot
+    Nothing -> join $ ((.) liftIO . pushMessage <$> lift (lift getAccessToken))
+        <*> (pushMessageData <$> srcId)
+    where
+        pushMessageData aId = PushMessage {
             pmTo = aId
           , pmMessages = map (\x -> MBText $ textMessage x Nothing Nothing) txts
           }

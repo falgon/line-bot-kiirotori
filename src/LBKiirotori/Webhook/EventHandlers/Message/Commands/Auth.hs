@@ -1,7 +1,8 @@
 {-# LANGUAGE DataKinds, LambdaCase, OverloadedStrings, TemplateHaskell,
              TupleSections #-}
 module LBKiirotori.Webhook.EventHandlers.Message.Commands.Auth (
-    authCmd
+    checkAuthed
+  , authCmd
 ) where
 
 import           Control.Applicative                              (Alternative (..))

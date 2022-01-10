@@ -34,15 +34,16 @@ data LBKiirotoriAppConfig = LBKiirotoriAppConfig {
   , cfgAppSuccessAuth :: T.Text
   , cfgAppFailedAuth  :: T.Text
   , cfgAppAlreadyAuth :: T.Text
+  , cfgAppUnknown     :: T.Text
   }
   deriving stock Show
 #ifndef RELEASE
 instance Semigroup LBKiirotoriAppConfig where
-    (LBKiirotoriAppConfig l1 l2 l3 l4 l5) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5) =
-        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5)
+    (LBKiirotoriAppConfig l1 l2 l3 l4 l5 l6) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5 r6) =
+        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5) (l6 <> r6)
 
 instance Monoid LBKiirotoriAppConfig where
-    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty
+    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty mempty
 #endif
 
 data LBKiirotoriLineConfig = LBKiirotoriLineConfig {
@@ -120,6 +121,7 @@ readAppConfig tb = LBKiirotoriAppConfig
     <*> lookupString "success_auth" tb
     <*> lookupString "failed_auth" tb
     <*> lookupString "already_auth" tb
+    <*> lookupString "unknown_cmd_message" tb
 
 readRedisConfig :: MonadThrow m => Table -> m Redis.ConnectInfo
 readRedisConfig redisTable = do

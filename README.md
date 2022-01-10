@@ -1,5 +1,7 @@
 # 🐥 line-bot-kiirotori
 
+LINE Bot for personal use that I use with [Messaging API](https://developers.line.biz/ja/services/messaging-api/).
+
 ## Requirements
 
 - systemd
@@ -34,19 +36,33 @@ Put the following configuration file in any location (default: `~/.config/lb-kii
 ```toml
 [app]
 welcome_message = "piyo" # welcome message
+during_auth = ""
+success_auth = ""
+failed_auth = ""
+already_auth = "the channel name %s is authorized at %s"
+unknown_cmd_message = "🤔"
+
+[mysql]
+hostname = "" # host name, e.g. "127.0.0.2"
+port = 3306 # port number
+password = ""
+username = ""
+database = ""
+charset = "" # charset, e.g. 224 (utf8mb4)
 
 [redis]
-hostname = "localhost"
-port = 6379
-password = "" # option
+hostname = "" # host name, e.g. "127.0.0.2"
+port = 6379 # port number
+password = ""
 select = 0
 max_connections = 50
 max_idle_time = 30
 
 [line]
-kid = "" # Assertion Signing Key
+kid = "" # assertion signing key
 user_id = "" # user id
 channel_id = "" # channel id
 channel_secret = "" # channel secret
+channel_name = "" # channel name
 jwk_set_key = "" # jwk private set key, c.f. https://developers.line.biz/en/docs/messaging-api/generate-json-web-token/#generate-private-and-public-key
 ```

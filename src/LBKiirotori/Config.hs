@@ -28,12 +28,21 @@ import           Servant.Server         (Handler)
 import           Text.Toml              (parseTomlDoc)
 import           Text.Toml.Types        (Node (..), Table)
 
-newtype LBKiirotoriAppConfig = LBKiirotoriAppConfig {
-    cfgAppWelcome :: T.Text
+data LBKiirotoriAppConfig = LBKiirotoriAppConfig {
+    cfgAppWelcome     :: T.Text
+  , cfgAppDuringAuth  :: T.Text
+  , cfgAppSuccessAuth :: T.Text
+  , cfgAppFailedAuth  :: T.Text
+  , cfgAppAlreadyAuth :: T.Text
   }
   deriving stock Show
 #ifndef RELEASE
-  deriving newtype (Semigroup, Monoid)
+instance Semigroup LBKiirotoriAppConfig where
+    (LBKiirotoriAppConfig l1 l2 l3 l4 l5) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5) =
+        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5)
+
+instance Monoid LBKiirotoriAppConfig where
+    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty
 #endif
 
 data LBKiirotoriLineConfig = LBKiirotoriLineConfig {
@@ -105,7 +114,12 @@ lookupInteger key tb = case HM.lookup key tb of
     _                 -> throwString $ "expected integer " <> T.unpack key
 
 readAppConfig :: MonadThrow m => Table -> m LBKiirotoriAppConfig
-readAppConfig = fmap LBKiirotoriAppConfig . lookupString "welcome_message"
+readAppConfig tb = LBKiirotoriAppConfig
+    <$> lookupString "welcome_message" tb
+    <*> lookupString "during_auth" tb
+    <*> lookupString "success_auth" tb
+    <*> lookupString "failed_auth" tb
+    <*> lookupString "already_auth" tb
 
 readRedisConfig :: MonadThrow m => Table -> m Redis.ConnectInfo
 readRedisConfig redisTable = do

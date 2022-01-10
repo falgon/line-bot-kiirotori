@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fcfd497ebfafe2a5210891701c9e06cbe1dbb636cdccc0216894ee37488b8b7d
+-- hash: 56d65fa643a6dc9381577455d920ac79c9f070445091bb68757bf4553fe78dd4
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -35,6 +35,7 @@ library
       LBKiirotori.AccessToken.Config
       LBKiirotori.AccessToken.Core
       LBKiirotori.AccessToken.JWT
+      LBKiirotori.API.Count.Room
       LBKiirotori.API.MessageErrorResp
       LBKiirotori.API.Profile.FriendUser
       LBKiirotori.API.Profile.GroupMember
@@ -103,6 +104,7 @@ library
     , servant
     , servant-server
     , text
+    , text-format
     , time
     , transformers
     , unordered-containers
@@ -150,6 +152,7 @@ executable line-bot-kiirotori
     , servant
     , servant-server
     , text
+    , text-format
     , time
     , transformers
     , unordered-containers
@@ -196,6 +199,7 @@ test-suite line-bot-kiirotori-test
     , servant
     , servant-server
     , text
+    , text-format
     , time
     , transformers
     , unordered-containers

@@ -2,11 +2,13 @@
              ScopedTypeVariables #-}
 module LBKiirotori.Database.Redis (
     newConn
+  , hmget'
+  , hmset'
   , writeToken
   , takeToken
   , takeValidToken
   , AccessToken (..)
-  , getPinCode
+  , getAuthCode
 ) where
 
 import           Control.Applicative                            (Alternative (..))
@@ -30,19 +32,17 @@ import qualified Data.Text.Encoding                             as T
 import           Data.Time.Clock                                (UTCTime,
                                                                  addUTCTime,
                                                                  getCurrentTime)
-import           Data.Time.Clock.POSIX                          (posixSecondsToUTCTime,
-                                                                 utcTimeToPOSIXSeconds)
+import           Data.Time.Clock.POSIX                          (utcTimeToPOSIXSeconds)
 import           Data.Time.Format                               (defaultTimeLocale,
                                                                  formatTime,
                                                                  rfc822DateFormat)
-import           Data.Time.LocalTime                            (TimeZone (..), getCurrentTimeZone,
-                                                                 utcToLocalTime)
+import           Data.Time.LocalTime                            (LocalTime)
 import qualified Data.Vector.Fixed                              as V
 import qualified Data.Vector.Fixed.Boxed                        as V
 import           Database.Redis                                 (ConnectInfo,
                                                                  Connection,
                                                                  RedisCtx,
-                                                                 Reply,
+                                                                 Reply, Status,
                                                                  checkedConnect,
                                                                  defaultConnectInfo,
                                                                  get, hmget,
@@ -51,7 +51,10 @@ import           Text.Read                                      (readEither)
 
 import           LBKiirotori.AccessToken.Config                 (AccessToken (..))
 import           LBKiirotori.AccessToken.Core                   (LineIssueChannelResp (..))
-import           LBKiirotori.Internal.Utils                     (hoistMaybe)
+import           LBKiirotori.Internal.Utils                     (doubleToUTCTime,
+                                                                 hoistMaybe,
+                                                                 localTimeToCurrentUTCTimeZone,
+                                                                 utcToCurrentLocalTimeZone)
 import           LBKiirotori.Webhook.EventObject.LineBotHandler (LineBotHandler,
                                                                  runRedis)
 
@@ -62,16 +65,15 @@ writeToken :: UTCTime
     -> LineIssueChannelResp
     -> LineBotHandler AccessToken
 writeToken currentTime reqResp = runRedis $
-    liftIO getCurrentTimeZone
+    utcToCurrentLocalTimeZone expiredTime
         >>= liftIO . putStrLn
             . mappend "Generated a new token that is expired at: "
             . formatTime defaultTimeLocale rfc822DateFormat
-            . flip utcToLocalTime expiredTime
-        >> void (hmset "tokens" [
+        >> hmset "tokens" [
             ("expiredtime", fromString $ show val)
           , ("token", fromString $ T.unpack $ accessToken reqResp)
           , ("kid", fromString $ T.unpack $ keyID reqResp)
-          ])
+          ]
         $> AccessToken {
             atKeyId = keyID reqResp
           , atToken = fromString $ T.unpack $ accessToken reqResp
@@ -93,7 +95,7 @@ hmget' key field = do
     vs <- hmget key (V.toList field)
         >>= eitherFail
         >>= maybe (fail $ mconcat [
-            "unexpexed to take token: expected "
+            "error: expected "
           , show (V.length field)
           , " results"
           ]) (pure . catMaybes . V.toList) . toFixed
@@ -102,6 +104,13 @@ hmget' key field = do
         toFixed = V.fromListM :: [Maybe BS.ByteString] -> Maybe (v (Maybe BS.ByteString))
         toFixed' = V.fromListM :: [BS.ByteString] -> Maybe (v (BS.ByteString))
 
+hmset' :: (MonadFail m, RedisCtx m (Either Reply))
+    => BS.ByteString
+    -> [(BS.ByteString, BS.ByteString)]
+    -> m Status
+hmset' key field = hmset key field
+    >>= eitherFail
+
 takeToken :: LineBotHandler (Maybe AccessToken)
 takeToken = runMaybeT $ do
     res <- lift (runRedis $ hmget' "tokens" $ mk3Vec "expiredtime" "token" "kid")
@@ -109,9 +118,6 @@ takeToken = runMaybeT $ do
     AccessToken (T.decodeUtf8 (res `V.index` two)) (res `V.index` one) . doubleToUTCTime
         <$> ((lift . throwString) ||| (lift . pure)) (readEither (BS.toString (res `V.index` zero)))
     where
-        doubleToUTCTime :: Double -> UTCTime
-        doubleToUTCTime = posixSecondsToUTCTime . realToFrac
-
         mk3Vec :: a
             -> a
             -> a
@@ -129,8 +135,8 @@ takeValidToken = runMaybeT $ do
         (pure tk)
         empty
 
-getPinCode :: IsString s => LineBotHandler s
-getPinCode = runRedis (get pinCodeKey >>= eitherFail)
+getAuthCode :: IsString s => LineBotHandler s
+getAuthCode = runRedis (get pinCodeKey >>= eitherFail)
     >>= maybe (throwString "cannot get PINCODE") (pure . fromString . BS.toString)
     where
         pinCodeKey = "PINCODE"

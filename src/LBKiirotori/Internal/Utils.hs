@@ -4,7 +4,10 @@ module LBKiirotori.Internal.Utils (
   , decodeJSON
   , hoistMaybe
   , fromMaybeM
+  , utcToCurrentLocalTimeZone
+  , localTimeToCurrentUTCTimeZone
   , getCurrentLocalTime
+  , doubleToUTCTime
 ) where
 
 import           Control.Arrow                   ((|||))
@@ -17,8 +20,10 @@ import           Data.Aeson
 import qualified Data.ByteString.Lazy            as BL
 import           Data.Char                       (toLower)
 import qualified Data.Text                       as T
-import           Data.Time.Clock                 (getCurrentTime)
+import           Data.Time.Clock                 (UTCTime, getCurrentTime)
+import           Data.Time.Clock.POSIX           (posixSecondsToUTCTime)
 import           Data.Time.LocalTime             (LocalTime, getCurrentTimeZone,
+                                                  localTimeToUTC,
                                                   utcToLocalTime)
 import           Data.Tuple.Extra                (dupe, first, second)
 import           Servant.Server                  (Handler (..))
@@ -48,10 +53,22 @@ hoistMaybe = MaybeT . pure
 fromMaybeM :: Applicative m => m a -> Maybe a -> m a
 fromMaybeM = flip maybe pure
 
-getCurrentLocalTime :: MonadIO m => m LocalTime
-getCurrentLocalTime = utcToLocalTime
+utcToCurrentLocalTimeZone :: MonadIO m => UTCTime -> m LocalTime
+utcToCurrentLocalTimeZone utct = utcToLocalTime
     <$> liftIO getCurrentTimeZone
-    <*> liftIO getCurrentTime
+    <*> pure utct
+
+localTimeToCurrentUTCTimeZone :: MonadIO m => LocalTime -> m UTCTime
+localTimeToCurrentUTCTimeZone lt = localTimeToUTC
+    <$> liftIO getCurrentTimeZone
+    <*> pure lt
+
+getCurrentLocalTime :: MonadIO m => m LocalTime
+getCurrentLocalTime = liftIO getCurrentTime
+    >>= utcToCurrentLocalTimeZone
+
+doubleToUTCTime :: Double -> UTCTime
+doubleToUTCTime = posixSecondsToUTCTime . realToFrac
 
 instance MonadParallel m => MonadParallel (LoggingT m) where
     bindM2 f ma mb = LoggingT $ \g ->

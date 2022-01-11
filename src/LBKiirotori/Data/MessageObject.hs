@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
-module LBKiirotori.Data.PushMessage.Core (
+module LBKiirotori.Data.MessageObject (
     Sender (..)
   , textMessage
-  , PushMessage (..)
   , stickerMessage
   , MessageBody (..)
+  , Messages
 ) where
 
 import           Data.Aeson
@@ -16,7 +16,7 @@ import           GHC.Generics
 data Sender = Sender {
     senderName    :: T.Text
   , senderIconUrl :: T.Text
-  } deriving Show
+  } deriving (Eq, Show)
 
 instance ToJSON Sender where
     toJSON (Sender n iu) = object [
@@ -28,7 +28,7 @@ data Emoji = Emoji {
     emojiIndex     :: Word32
   , emojiProductId :: T.Text
   , emojiId        :: T.Text
-  } deriving Show
+  } deriving (Eq, Show)
 
 instance ToJSON Emoji where
     toJSON (Emoji idx pid sid) = object [
@@ -42,7 +42,7 @@ data TextMessage = TextMessage {
   , messageText   :: T.Text
   , messageSender :: Maybe Sender
   , messageEmojis :: Maybe Emoji
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 textMessage :: T.Text
     -> Maybe Sender
@@ -60,7 +60,7 @@ data StickerMessage = StickerMessage {
     stickerType      :: T.Text
   , stickerPackageId :: T.Text
   , stickerId        :: T.Text
-  } deriving Show
+  } deriving (Eq, Show)
 
 stickerMessage :: T.Text -> T.Text -> StickerMessage
 stickerMessage = StickerMessage "sticker"
@@ -75,7 +75,7 @@ instance ToJSON StickerMessage where
 data FlexMessageContentsBodyContent = FlexMessageContentsBodyContent {
     fmcbcType :: T.Text
   , fmcbcText :: T.Text
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 instance ToJSON FlexMessageContentsBodyContent where
     toJSON = genericToJSON $ defaultOptions {
@@ -88,7 +88,7 @@ data FlexMessageContentsBody = FlexMessageContentsBody {
     fmcbType     :: T.Text
   , fmcbLayout   :: T.Text
   , fmcbContents :: FlexMessageContentsBodyContents
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 instance ToJSON FlexMessageContentsBody where
     toJSON = genericToJSON $ defaultOptions {
@@ -98,7 +98,7 @@ instance ToJSON FlexMessageContentsBody where
 data FlexMessageContents = FlexMessageContents {
     fmcType :: T.Text
   , fmcBody :: FlexMessageContentsBody
-  } deriving (Show, Generic)
+  } deriving (Eq, Show, Generic)
 
 instance ToJSON FlexMessageContents where
     toJSON = genericToJSON $ defaultOptions {
@@ -109,7 +109,7 @@ data FlexMessage = FlexMessage {
     flexMessageType     :: T.Text
   , flexMessageAltText  :: T.Text
   , flexMessageContents :: FlexMessageContents
-  } deriving Show
+  } deriving (Eq, Show)
 
 flexMessage :: T.Text -> FlexMessageContents -> FlexMessage
 flexMessage = FlexMessage "flex"
@@ -124,7 +124,7 @@ instance ToJSON FlexMessage where
 data MessageBody = MBText TextMessage
     | MBSticker StickerMessage
     | MBFlex FlexMessage
-    deriving Show
+    deriving (Eq, Show)
 
 instance ToJSON MessageBody where
     toJSON (MBText m)    = toJSON m
@@ -132,10 +132,3 @@ instance ToJSON MessageBody where
     toJSON (MBFlex m)    = toJSON m
 
 type Messages = [MessageBody]
-
-data PushMessage = PushMessage {
-    to       :: T.Text
-  , messages :: Messages
-  } deriving (Show, Generic)
-
-instance ToJSON PushMessage

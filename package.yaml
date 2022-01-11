@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - aeson
 - text
+- transformers
 - unordered-containers
 - time
 - safe-exceptions
@@ -36,9 +37,34 @@ dependencies:
 - extra
 - monad-parallel
 - scientific
+- servant
+- servant-server
+- warp
+- warp-tls
+- monad-logger
+- base64-bytestring
+- vector
+- cryptohash-sha256
+- http-media
+- path
+- path-io
+- htoml
+- optparse-applicative
+- megaparsec
+- fixed-vector
+- mysql-haskell
+- io-streams
+
+flags:
+  release:
+    manual: true
+    default: false
 
 library:
   source-dirs: src
+  when:
+      condition: (flag(release))
+      cpp-options: -DRELEASE
 
 executables:
   line-bot-kiirotori:

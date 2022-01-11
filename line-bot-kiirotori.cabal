@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e1e694d83784e11367b2921b1992d5d4738059a418c14735bb0be8374e30e89b
+-- hash: 56d65fa643a6dc9381577455d920ac79c9f070445091bb68757bf4553fe78dd4
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -25,17 +25,53 @@ source-repository head
   type: git
   location: https://github.com/falgon/line-bot-kiirotori
 
+flag release
+  manual: True
+  default: False
+
 library
   exposed-modules:
       LBKiirotori.AccessToken
       LBKiirotori.AccessToken.Config
       LBKiirotori.AccessToken.Core
       LBKiirotori.AccessToken.JWT
-      LBKiirotori.AccessToken.Redis
+      LBKiirotori.API.Count.Room
+      LBKiirotori.API.MessageErrorResp
+      LBKiirotori.API.Profile.FriendUser
+      LBKiirotori.API.Profile.GroupMember
+      LBKiirotori.API.Profile.RoomMember
       LBKiirotori.API.PushMessage
-      LBKiirotori.Data.PushMessage
-      LBKiirotori.Data.PushMessage.Core
+      LBKiirotori.API.ReplyMessage
+      LBKiirotori.API.Summary.Group
+      LBKiirotori.Config
+      LBKiirotori.Data.MessageObject
+      LBKiirotori.Database.MySQL
+      LBKiirotori.Database.Redis
       LBKiirotori.Internal.Exceptions
+      LBKiirotori.Internal.HTTP
+      LBKiirotori.Internal.Utils
+      LBKiirotori.Webhook
+      LBKiirotori.Webhook.Core
+      LBKiirotori.Webhook.EventHandlers
+      LBKiirotori.Webhook.EventHandlers.Join
+      LBKiirotori.Webhook.EventHandlers.Message
+      LBKiirotori.Webhook.EventHandlers.Message.Commands
+      LBKiirotori.Webhook.EventHandlers.Message.Commands.Auth
+      LBKiirotori.Webhook.EventHandlers.Message.Commands.Echo
+      LBKiirotori.Webhook.EventHandlers.Message.Commands.Help
+      LBKiirotori.Webhook.EventHandlers.Message.Event
+      LBKiirotori.Webhook.EventHandlers.Message.MentionMe
+      LBKiirotori.Webhook.EventHandlers.Message.Parser
+      LBKiirotori.Webhook.EventHandlers.Message.Utils
+      LBKiirotori.Webhook.EventObject
+      LBKiirotori.Webhook.EventObject.Core
+      LBKiirotori.Webhook.EventObject.EventMessage
+      LBKiirotori.Webhook.EventObject.EventMode
+      LBKiirotori.Webhook.EventObject.EventSource
+      LBKiirotori.Webhook.EventObject.EventType
+      LBKiirotori.Webhook.EventObject.LineBotHandler
+      LBKiirotori.Webhook.EventObject.LineBotHandler.Core
+      LBKiirotori.Webhook.EventObject.LineBotHandler.Data
   other-modules:
       Paths_line_bot_kiirotori
   hs-source-dirs:
@@ -43,20 +79,41 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-sha256
     , extra
+    , fixed-vector
     , hedis
+    , htoml
     , http-conduit
+    , http-media
+    , io-streams
     , jose
     , lens
+    , megaparsec
+    , monad-logger
     , monad-parallel
     , mtl
+    , mysql-haskell
+    , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , scientific
+    , servant
+    , servant-server
     , text
+    , text-format
     , time
+    , transformers
     , unordered-containers
     , utf8-string
+    , vector
+    , warp
+    , warp-tls
+  if (flag(release))
+    cpp-options: -DRELEASE
   default-language: Haskell2010
 
 executable line-bot-kiirotori
@@ -69,21 +126,40 @@ executable line-bot-kiirotori
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-sha256
     , extra
+    , fixed-vector
     , hedis
+    , htoml
     , http-conduit
+    , http-media
+    , io-streams
     , jose
     , lens
     , line-bot-kiirotori
+    , megaparsec
+    , monad-logger
     , monad-parallel
     , mtl
+    , mysql-haskell
+    , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , scientific
+    , servant
+    , servant-server
     , text
+    , text-format
     , time
+    , transformers
     , unordered-containers
     , utf8-string
+    , vector
+    , warp
+    , warp-tls
   default-language: Haskell2010
 
 test-suite line-bot-kiirotori-test
@@ -97,19 +173,38 @@ test-suite line-bot-kiirotori-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , base64-bytestring
     , bytestring
+    , cryptohash-sha256
     , extra
+    , fixed-vector
     , hedis
+    , htoml
     , http-conduit
+    , http-media
+    , io-streams
     , jose
     , lens
     , line-bot-kiirotori
+    , megaparsec
+    , monad-logger
     , monad-parallel
     , mtl
+    , mysql-haskell
+    , optparse-applicative
+    , path
+    , path-io
     , safe-exceptions
     , scientific
+    , servant
+    , servant-server
     , text
+    , text-format
     , time
+    , transformers
     , unordered-containers
     , utf8-string
+    , vector
+    , warp
+    , warp-tls
   default-language: Haskell2010

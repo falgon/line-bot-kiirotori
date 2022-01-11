@@ -1,7 +1,29 @@
-version: '3'
+version: '3.7'
 services:
   redis:
-    container_name: "redis-line-bot-kiirotori"
-    image: 'redis:6.2'
+    build:
+      context: ./redis
+    container_name: redis-line-bot-kiirotori
+    image: redis:6.2
     ports:
-      - "6379:6379"
+      - $IP:$REDIS_PORT:6379
+    tty: true
+  rdb:
+    container_name: mysql-line-bot-kiirotori
+    image: mysql:8.0
+    ports:
+      - $IP:$MYSQL_PORT:3306
+    tty: true
+    volumes:
+      - ./rdb/init:/docker-entrypoint-initdb.d
+      - ./rdb/data:/var/lib/mysql
+      - ./rdb/conf:/etc/mysql/conf.d
+    environment:
+      MYSQL_DATABASE: $MYSQL_DATABASE
+      MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+      MYSQL_USER: $MYSQL_USER
+      MYSQL_PASSWORD: $MYSQL_PASSWORD
+      MYSQL_TCP_PORT: $MYSQL_PORT
+    cap_add:
+      - SYS_NICE
+

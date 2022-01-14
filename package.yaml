@@ -91,3 +91,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - line-bot-kiirotori
+    - HUnit
+    - hspec
+    - hspec-core
+    - hspec-contrib

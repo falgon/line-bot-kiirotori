@@ -59,7 +59,7 @@ cronPathOpt homeDir = OA.option (OA.maybeReader P.parseSomeFile) $ mconcat [
   , OA.metavar "<cron-schedule file path>"
   ]
     where
-        conf = $(P.mkRelDir ".confi")
+        conf = $(P.mkRelDir ".config")
             P.</> $(P.mkRelDir "lb-kiirotori")
             P.</> $(P.mkRelFile "schedule.cron")
 

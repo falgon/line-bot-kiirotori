@@ -26,12 +26,12 @@ sudo systemctl start line-bot-kiirotori
 
 ```bash
 stack build --fast
-stack exec line-bot-kiirotori -- serve -c <config path>
+stack exec line-bot-kiirotori -- serve -c <config path> -s <cron path>
 ```
 
 ## Configration
 
-Put the following configuration file in any location (default: `~/.config/lb-kiitoroti/config.toml`).
+Put the following configuration file in any location (default: `~/.config/lb-kiitoroti/config.toml`, `~/.config/lb-kiirotori/schedule.cron`).
 
 ```toml
 [app]
@@ -41,6 +41,7 @@ success_auth = ""
 failed_auth = ""
 already_auth = "the channel name %s is authorized at %s"
 unknown_cmd_message = "🤔"
+port = 48080 # port number
 
 [mysql]
 hostname = "" # host name, e.g. "127.0.0.2"
@@ -65,4 +66,10 @@ channel_id = "" # channel id
 channel_secret = "" # channel secret
 channel_name = "" # channel name
 jwk_set_key = "" # jwk private set key, c.f. https://developers.line.biz/en/docs/messaging-api/generate-json-web-token/#generate-private-and-public-key
+```
+
+```cron
+# Send a push message to the 
+# user UXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX every minute, "hello!"
+* * * * * UXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX push-text-message hello!
 ```

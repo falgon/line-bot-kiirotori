@@ -46,8 +46,8 @@ import           Servant.Server                                 (Application,
 import           Servant.Server.Internal.ServerError
 
 import           LBKiirotori.Config                             (LBKiirotoriConfig (..))
-import qualified LBKiirotori.Database.Redis as Redis
-import qualified LBKiirotori.Database.MySQL as MySQL
+import qualified LBKiirotori.Database.MySQL                     as MySQL
+import qualified LBKiirotori.Database.Redis                     as Redis
 import           LBKiirotori.Internal.Utils                     (tshow)
 import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject

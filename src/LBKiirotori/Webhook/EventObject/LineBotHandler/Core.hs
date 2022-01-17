@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 module LBKiirotori.Webhook.EventObject.LineBotHandler.Core (
     askLineKId
   , askLineChanId
@@ -22,10 +23,18 @@ import qualified Database.MySQL.Base                                 as M
 import qualified Database.Redis                                      as R
 import           System.IO.Streams                                   (InputStream)
 
+import qualified LBKiirotori.AccessToken.Class                       as AC
 import           LBKiirotori.Config                                  (LBKiirotoriConfig (..),
                                                                       LBKiirotoriLineConfig (..))
 import           LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler,
                                                                       LineBotHandlerConfig (..))
+
+instance AC.AccessTokenMonad LineBotHandler where
+    lineJWKSet = askLineJWKSet
+    lineKId = askLineKId
+    lineChanId = askLineChanId
+    lineChanSecret = askLineChanSecret
+    redis = runRedis
 
 askLineKId :: LineBotHandler B.ByteString
 askLineKId = asks $ cfgKID . cfgLine . lbhCfg

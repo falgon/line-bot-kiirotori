@@ -7,34 +7,28 @@ module LBKiirotori.AccessToken.Core (
   , reqRevokeChannelAccess
 ) where
 
-import           Control.Arrow                                  ((|||))
-import           Control.Exception.Safe                         (Exception,
-                                                                 MonadThrow (..),
-                                                                 throw,
-                                                                 throwString)
-import           Control.Monad                                  (liftM2)
-import           Control.Monad.Error.Class                      (MonadError)
-import           Control.Monad.IO.Class                         (MonadIO (..))
-import           Control.Monad.Parallel                         (MonadParallel)
-import           Crypto.JWT                                     (AsError,
-                                                                 MonadRandom,
-                                                                 SignedJWT,
-                                                                 encodeCompact)
+import           Control.Arrow                  ((|||))
+import           Control.Exception.Safe         (Exception, MonadThrow (..),
+                                                 throw, throwString)
+import           Control.Monad                  (liftM2)
+import           Control.Monad.Error.Class      (MonadError)
+import           Control.Monad.IO.Class         (MonadIO (..))
+import           Control.Monad.Parallel         (MonadParallel)
+import           Crypto.JWT                     (AsError, MonadRandom,
+                                                 SignedJWT, encodeCompact)
 import           Data.Aeson.Types
-import qualified Data.ByteString                                as BS
-import qualified Data.ByteString.Lazy                           as BL
-import           Data.Functor                                   ((<&>))
-import           Data.Scientific                                (Scientific)
-import qualified Data.Text                                      as T
-import           Data.Word                                      (Word32)
+import qualified Data.ByteString                as BS
+import qualified Data.ByteString.Lazy           as BL
+import           Data.Functor                   ((<&>))
+import           Data.Scientific                (Scientific)
+import qualified Data.Text                      as T
+import           Data.Word                      (Word32)
 import           Network.HTTP.Simple
 
-import           LBKiirotori.AccessToken.Config                 (AccessToken (..))
-import           LBKiirotori.AccessToken.JWT                    (getJwt)
-import           LBKiirotori.Internal.Utils                     (decodeJSON)
-import           LBKiirotori.Webhook.EventObject.LineBotHandler (LineBotHandler,
-                                                                 askLineChanId,
-                                                                 askLineChanSecret)
+import           LBKiirotori.AccessToken.Class  (AccessTokenMonad (..))
+import           LBKiirotori.AccessToken.Config (AccessToken (..))
+import           LBKiirotori.AccessToken.JWT    (getJwt)
+import           LBKiirotori.Internal.Utils     (decodeJSON)
 
 data LineIssueChannelResp = LineIssueChannelResp {
     accessToken :: T.Text
@@ -101,8 +95,8 @@ reqAllValidCATKIdsParam jwt = setRequestMethod "GET"
         lineReqOauth2ValidTokenEndpoint = "https://api.line.me/oauth2/v2.1/tokens/kid"
 
 -- c.f. https://developers.line.biz/en/reference/messaging-api/#revoke-channel-access-token-v2-1
-reqRevokeChannelAccessToken :: AccessToken -> LineBotHandler Request
-reqRevokeChannelAccessToken tk = liftM2 dataURLEncode askLineChanId askLineChanSecret
+reqRevokeChannelAccessToken :: AccessTokenMonad m => AccessToken -> m Request
+reqRevokeChannelAccessToken tk = liftM2 dataURLEncode lineChanId lineChanSecret
     <&> flip setRequestBodyURLEncoded (parseRequest_ lineReqOauth2RevokeEndpoint)
     where
         dataURLEncode cID cSecret = [
@@ -123,15 +117,19 @@ sendReq req = do
 tokenLimSeconds :: Scientific
 tokenLimSeconds = 10 * 60 -- 10 minutes
 
-reqAccessToken :: LineBotHandler LineIssueChannelResp
+reqAccessToken :: (MonadIO m, MonadThrow m, MonadParallel m, AccessTokenMonad m)
+    => m LineIssueChannelResp
 reqAccessToken = getJwt tokenLimSeconds >>= sendReq . reqIssueChannelParam
 
-reqAllValidCATKIds :: LineBotHandler LineAllValidCATKIdsResp
+reqAllValidCATKIds :: (MonadIO m, MonadThrow m, MonadParallel m, AccessTokenMonad m)
+    => m LineAllValidCATKIdsResp
 reqAllValidCATKIds = getJwt tokenLimSeconds >>= sendReq . reqAllValidCATKIdsParam
 
-reqRevokeChannelAccess :: AccessToken -> LineBotHandler ()
+reqRevokeChannelAccess :: forall m. (MonadIO m, MonadThrow m, AccessTokenMonad m)
+    => AccessToken
+    -> m ()
 reqRevokeChannelAccess tk = do
     resp <- reqRevokeChannelAccessToken tk >>= httpLBS
     if getResponseStatusCode resp == 200 then pure ()
-    else decodeJSON (getResponseBody resp) >>= (throw :: LineReqErrResp -> LineBotHandler ())
+    else decodeJSON (getResponseBody resp) >>= (throw :: LineReqErrResp -> m ())
 

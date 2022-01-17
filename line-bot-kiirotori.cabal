@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f6ce0ae7e9a09345e2170983d66887b1094d1f872362af2d3d09456c9c9f0d0b
+-- hash: 69d38040ae7da2aec6c67479952dc179a395b8ed43f9d828ed832ab6bc188f70
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -32,6 +32,7 @@ flag release
 library
   exposed-modules:
       LBKiirotori.AccessToken
+      LBKiirotori.AccessToken.Class
       LBKiirotori.AccessToken.Config
       LBKiirotori.AccessToken.Core
       LBKiirotori.AccessToken.JWT

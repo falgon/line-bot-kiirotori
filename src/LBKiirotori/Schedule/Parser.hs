@@ -6,19 +6,19 @@ module LBKiirotori.Schedule.Parser (
   , parseCronSchedule
 ) where
 
-import Control.Arrow ((|||))
-import Control.Exception.Safe (throw, MonadThrow (..))
-import Data.List (isPrefixOf)
-import Control.Monad (void)
-import Control.Applicative (Alternative (..))
+import           Control.Applicative        (Alternative (..))
+import           Control.Arrow              ((|||))
+import           Control.Exception.Safe     (MonadThrow (..), throw)
+import           Control.Monad              (void)
+import           Data.Functor               (($>), (<&>))
+import           Data.Functor.Identity      (Identity)
+import           Data.List                  (isPrefixOf)
 import qualified Data.Text                  as T
+import           Data.Void                  (Void)
 import qualified System.Cron.Schedule       as C
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Char       as MC
 import qualified Text.Megaparsec.Char.Lexer as MCL
-import Data.Functor (($>), (<&>))
-import Data.Functor.Identity (Identity)
-import Data.Void (Void)
 
 import           LBKiirotori.Config         (LBKiirotoriConfig)
 
@@ -44,7 +44,7 @@ cronExpr = T.intercalate " "
     <$> M.count 5 (T.pack <$> M.someTill M.anySingle separator)
 
 -- <target id>  ::= <id> <separator>
--- 
+--
 -- <id> ::= <user id>
 --      | <group id>
 --      | <room id>
@@ -79,13 +79,13 @@ data SchedulableApp = SchedulableApp {
 data SchedulableAppRow = SchedulableAppRow {
     sarCronExpr :: T.Text
   , sarTargetId :: T.Text
-  , sarApp :: SchedulableApp
+  , sarApp      :: SchedulableApp
   }
   deriving (Show, Eq)
 
 -- <app cmd> ::= <cmd> <arguments>
 --
--- <cmd> ::= "push-message" 
+-- <cmd> ::= "push-message"
 --
 -- <arguments> ::= ""
 --      | <separator> <string> (<arguments>)*
@@ -98,10 +98,10 @@ appCmd = SchedulableApp
     where
         arguments = M.choice [
             separator
-                *> M.manyTill M.anySingle (M.choice [ 
+                *> M.manyTill M.anySingle (M.choice [
                     M.eof
                   , MCL.skipLineComment "#"
-                  , void $ M.lookAhead MC.newline 
+                  , void $ M.lookAhead MC.newline
                   ])
                 <&> T.words . T.pack
           , spaceConsumer
@@ -126,4 +126,4 @@ parseCronSchedule :: MonadThrow m => T.Text -> m [SchedulableAppRow]
 parseCronSchedule = (throw ||| pure) . M.parse cronSchedule mempty
 
 -- parseSchedule :: T.Text -> C.ScheduleT m a
---  
+--

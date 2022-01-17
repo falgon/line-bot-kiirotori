@@ -6,8 +6,7 @@ module LBKiirotori.AccessToken (
 
 import           Control.Exception.Safe        (MonadThrow)
 import           Control.Monad.IO.Class        (MonadIO (..))
-import           Control.Monad.Parallel        (bindM2)
-import           Control.Monad.Parallel        (MonadParallel)
+import           Control.Monad.Parallel        (MonadParallel, bindM2)
 import           Data.String                   (IsString (..))
 import qualified Data.Text                     as T
 import           Data.Time.Clock               (getCurrentTime)

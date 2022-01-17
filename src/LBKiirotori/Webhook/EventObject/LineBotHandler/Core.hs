@@ -65,7 +65,7 @@ runSQL :: M.QueryParam p
     -> [p]
     -> LineBotHandler (Vector M.ColumnDef, InputStream (Vector M.MySQLValue))
 runSQL q p = askMySQLConn
-    >>= liftIO . flip (flip M.queryVector q) p
+    >>= liftIO . flip (`M.queryVector` q) p
 
 runSQL_ :: M.Query
     -> LineBotHandler (Vector M.ColumnDef, InputStream (Vector M.MySQLValue))
@@ -77,7 +77,7 @@ executeSQL :: M.QueryParam p
     -> [p]
     -> LineBotHandler M.OK
 executeSQL q p = askMySQLConn
-    >>= liftIO . flip (flip M.execute q) p
+    >>= liftIO . flip (`M.execute` q) p
 
 runRedis :: R.Redis a -> LineBotHandler a
 runRedis rexpr = askRedisConn >>= liftIO . flip R.runRedis rexpr

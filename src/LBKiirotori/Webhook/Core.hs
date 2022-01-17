@@ -1,11 +1,12 @@
 {-# LANGUAGE DataKinds, MultiParamTypeClasses, OverloadedStrings,
              TemplateHaskell, TypeOperators #-}
 module LBKiirotori.Webhook.Core (
-    kiirotoriApp
+    mainServer
 ) where
 
-import           Control.Arrow                                  ((|||))
-import           Control.Monad                                  (forM_)
+import           Control.Arrow                                  ((&&&), (|||))
+import           Control.Exception.Safe                         (MonadThrow)
+import           Control.Monad                                  (forM_, unless)
 import           Control.Monad.Except                           (MonadError (..))
 import           Control.Monad.IO.Class                         (MonadIO (..))
 import           Control.Monad.Logger                           (LoggingT (..),
@@ -29,6 +30,13 @@ import qualified Data.Text                                      as T
 import qualified Data.Text.Encoding                             as T
 import qualified Data.Vector                                    as V
 import qualified Network.HTTP.Media                             as M
+import           Network.Wai.Handler.Warp                       (Port, Settings,
+                                                                 defaultSettings,
+                                                                 runSettings,
+                                                                 setBeforeMainLoop,
+                                                                 setPort)
+import qualified Options.Applicative.Help.Pretty                as OA
+import qualified Path                                           as P
 import           Servant                                        (Header, JSON,
                                                                  MimeRender (..),
                                                                  MimeUnrender (..),
@@ -44,8 +52,11 @@ import           Servant.Server                                 (Application,
                                                                  hoistServer,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
+import           System.IO                                      (hFlush, stdout)
 
-import           LBKiirotori.Config                             (LBKiirotoriConfig (..))
+import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
+                                                                 LBKiirotoriConfig (..),
+                                                                 readConfigWithLog)
 import qualified LBKiirotori.Database.MySQL                     as MySQL
 import qualified LBKiirotori.Database.Redis                     as Redis
 import           LBKiirotori.Internal.Utils                     (tshow)
@@ -153,3 +164,15 @@ server = loggingServer mainHandler
 kiirotoriApp :: LBKiirotoriConfig -> Application
 kiirotoriApp = serve api . server
 
+serverSettings :: Bool -> LBKiirotoriConfig -> Settings
+serverSettings qFlag cfg = setPort (cfgAppPort $ cfgApp cfg)
+    $ setBeforeMainLoop beforeProc defaultSettings
+    where
+        beforeProc = unless qFlag $ OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
+
+mainServer :: (MonadIO m, MonadThrow m)
+    => Bool
+    -> LBKiirotoriConfig
+    -> m ()
+mainServer qFlag cfg = liftIO $ unless qFlag (putStr "ready to boot server" *> hFlush stdout)
+    *> uncurry runSettings ((serverSettings qFlag &&& kiirotoriApp) cfg)

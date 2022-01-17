@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.AccessToken.JWT (
     getJwt
 ) where
@@ -60,7 +60,7 @@ newJwtHeader = do
         & kid ?~ HeaderParam () kidVal
         & typ ?~ HeaderParam () "JWT"
 
-sign :: forall m. (MonadIO m, MonadThrow m)
+sign :: (MonadIO m, MonadThrow m)
     => JWK
     -> JWSHeader ()
     -> ClaimsSet

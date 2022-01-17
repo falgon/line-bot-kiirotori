@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 69d38040ae7da2aec6c67479952dc179a395b8ed43f9d828ed832ab6bc188f70
+-- hash: 57d7236f56a5c4e2553c48a051e720eb0a8ca5a8181a7f75915f1d4511a555fd
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -51,6 +51,9 @@ library
       LBKiirotori.Internal.Exceptions
       LBKiirotori.Internal.HTTP
       LBKiirotori.Internal.Utils
+      LBKiirotori.Schedule
+      LBKiirotori.Schedule.Data
+      LBKiirotori.Schedule.Job
       LBKiirotori.Schedule.Parser
       LBKiirotori.Webhook
       LBKiirotori.Webhook.Core
@@ -88,6 +91,7 @@ library
     , cryptohash-sha256
     , extra
     , fixed-vector
+    , fsnotify
     , hedis
     , htoml
     , http-conduit
@@ -136,6 +140,7 @@ executable line-bot-kiirotori
     , cryptohash-sha256
     , extra
     , fixed-vector
+    , fsnotify
     , gitrev
     , hedis
     , htoml
@@ -188,6 +193,7 @@ test-suite line-bot-kiirotori-test
     , cryptohash-sha256
     , extra
     , fixed-vector
+    , fsnotify
     , hedis
     , hspec
     , hspec-contrib

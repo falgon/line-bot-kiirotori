@@ -15,7 +15,6 @@ import           Data.Functor.Identity      (Identity)
 import           Data.List                  (isPrefixOf)
 import qualified Data.Text                  as T
 import           Data.Void                  (Void)
-import qualified System.Cron.Schedule       as C
 import qualified Text.Megaparsec            as M
 import qualified Text.Megaparsec.Char       as MC
 import qualified Text.Megaparsec.Char.Lexer as MCL
@@ -62,12 +61,12 @@ targetId = T.cons
     <*> (T.pack <$> M.count 32 (MC.digitChar M.<|> M.oneOf ['a'..'z']))
     <* separator
 
-data SchedulableAppCmd = PushMessage
+data SchedulableAppCmd = PushTextMessage
     deriving (Show, Eq)
 
 instance Read SchedulableAppCmd where
     readsPrec _ s
-        | "push-message" `isPrefixOf` s = [(PushMessage, drop 12 s)]
+        | "push-text-message" `isPrefixOf` s = [(PushTextMessage, drop 12 s)]
         | otherwise = []
 
 data SchedulableApp = SchedulableApp {
@@ -125,5 +124,3 @@ cronSchedule = spaceConsumer
 parseCronSchedule :: MonadThrow m => T.Text -> m [SchedulableAppRow]
 parseCronSchedule = (throw ||| pure) . M.parse cronSchedule mempty
 
--- parseSchedule :: T.Text -> C.ScheduleT m a
---

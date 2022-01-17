@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveAnyClass, OverloadedStrings, TemplateHaskell #-}
 module Main where
 
-import           Control.Arrow                   ((|||))
+import           Control.Arrow                   ((&&&), (|||))
 import           Control.Concurrent.Async        (wait, withAsync)
 import           Control.Exception.Safe          (throwString)
 import           Control.Monad.IO.Class          (MonadIO (..))
@@ -10,28 +10,27 @@ import qualified Data.Text                       as T
 import qualified Data.Text.IO                    as T
 import           Data.Version                    (showVersion)
 import           Development.GitRev              (gitHash)
-import           Network.Wai.Handler.Warp        (Settings, defaultSettings,
-                                                  runSettings,
-                                                  setBeforeMainLoop, setPort)
 import qualified Options.Applicative             as OA
 import qualified Options.Applicative.Help.Pretty as OA
 import           Path                            (Dir, File, Rel)
 import qualified Path                            as P
 import qualified Path.IO                         as P
 import qualified Paths_line_bot_kiirotori        as PR
-import qualified System.Cron.Schedule            as C
 import           System.IO                       (hFlush, stdout)
 import           Text.Printf                     (printf)
 import           Text.Toml                       (parseTomlDoc)
 
 import           LBKiirotori.Config              (readConfigWithLog)
 import           LBKiirotori.Internal.Utils      (getCurrentLocalTime)
-import           LBKiirotori.Webhook             (kiirotoriApp)
+import           LBKiirotori.Schedule            (watchSchedule)
+import           LBKiirotori.Webhook             (mainServer)
 
 data Cmd = CmdServe
 
 data Opts = Opts
     { optConfigPath :: P.SomeBase P.File
+    , optCronPath   :: P.SomeBase P.File
+    , optQuietLog   :: Bool
     , optCmd        :: Cmd
     }
 
@@ -47,14 +46,35 @@ configPathOpt homeDir = OA.option (OA.maybeReader P.parseSomeFile) $ mconcat [
   , OA.value $ P.Abs $ homeDir P.</> conf
   , OA.metavar "<config file path>"
   ]
-  where
-    conf = $(P.mkRelDir ".config")
-        P.</> $(P.mkRelDir "lb-kiirotori")
-        P.</> $(P.mkRelFile "config.toml")
+    where
+        conf = $(P.mkRelDir ".config")
+            P.</> $(P.mkRelDir "lb-kiirotori")
+            P.</> $(P.mkRelFile "config.toml")
+
+cronPathOpt :: P.Path P.Abs P.Dir -> OA.Parser (P.SomeBase P.File)
+cronPathOpt homeDir = OA.option (OA.maybeReader P.parseSomeFile) $ mconcat [
+    OA.long "cron-schedule"
+  , OA.short 's'
+  , OA.value $ P.Abs $ homeDir P.</> conf
+  , OA.metavar "<cron-schedule file path>"
+  ]
+    where
+        conf = $(P.mkRelDir ".confi")
+            P.</> $(P.mkRelDir "lb-kiirotori")
+            P.</> $(P.mkRelFile "schedule.cron")
+
+quietLogOpt :: OA.Parser Bool
+quietLogOpt = OA.switch $ mconcat [
+    OA.long "quiet"
+  , OA.short 'q'
+  , OA.help "Quiet log output"
+  ]
 
 programOptions :: P.Path P.Abs P.Dir -> OA.Parser Opts
 programOptions homeDir = Opts
     <$> configPathOpt homeDir
+    <*> cronPathOpt homeDir
+    <*> quietLogOpt
     <*> OA.hsubparser (mconcat [
         serveCmd
       ])
@@ -105,25 +125,12 @@ putBootMessage = do
       , OA.hardline <> OA.text "started at" OA.<+> OA.text (show c) <> OA.hardline
       ]
 
-serverSettings :: Settings
-serverSettings = setPort 48080
-    $ setBeforeMainLoop beforeProc defaultSettings
-    where
-        beforeProc = OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
-
 main :: IO ()
 main = do
     opts <- parseOptions
-    OA.putDoc (logo <> OA.hardline)
+    cfg <- OA.putDoc (logo <> OA.hardline)
         >> putBootMessage
-        >> readConfigWithLog False (optConfigPath opts)
-        >>= (\x -> putStr "ready to boot server..."
-            >> hFlush stdout
-            >> runSettings serverSettings (kiirotoriApp x))
+        >> uncurry readConfigWithLog ((optQuietLog &&& optConfigPath) opts)
+    withAsync (uncurry watchSchedule ((optQuietLog &&& optCronPath) opts) cfg) wait
+        >> mainServer (optQuietLog opts) cfg
 
-        {-
-        >> putStrLn "boot scheduler..."
-            >> withAsync (C.execSchedule (C.addJob (putStrLn "hoge") "* * * * *")) wait
-        >> putStrLn "boot server..."
-            >> readConfig (optConfigPath opts)
-            >>= run 48080 . kiirotoriApp -}

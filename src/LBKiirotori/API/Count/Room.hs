@@ -22,7 +22,7 @@ import           LBKiirotori.Database.Redis       (AccessToken (..))
 import           LBKiirotori.Internal.HTTP        (reqGet)
 import           LBKiirotori.Internal.Utils       (decodeJSON, stripFirstToLowerLabeledOption)
 
-data CountRoomResp = CountRoomResp {
+newtype CountRoomResp = CountRoomResp {
     cmCount :: Int
   } deriving (Eq, Show, Generic)
 

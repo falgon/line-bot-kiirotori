@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, LambdaCase, OverloadedStrings,
+{-# LANGUAGE DataKinds, FlexibleContexts, OverloadedStrings,
              ScopedTypeVariables #-}
 module LBKiirotori.Database.Redis (
     newConn
@@ -21,8 +21,7 @@ import           Control.Monad.IO.Class         (MonadIO (..))
 import           Control.Monad.Trans            (lift)
 import           Control.Monad.Trans.Maybe      (runMaybeT)
 import qualified Data.ByteString.UTF8           as BS
-import           Data.Functor                   ((<&>))
-import           Data.Functor                   (($>))
+import           Data.Functor                   (($>), (<&>))
 import           Data.Maybe                     (catMaybes)
 import           Data.Proxy
 import           Data.String                    (IsString (..))
@@ -95,7 +94,7 @@ hmget' key field = do
     pure $ if null vs then empty else toFixed' vs
     where
         toFixed = V.fromListM :: [Maybe BS.ByteString] -> Maybe (v (Maybe BS.ByteString))
-        toFixed' = V.fromListM :: [BS.ByteString] -> Maybe (v (BS.ByteString))
+        toFixed' = V.fromListM :: [BS.ByteString] -> Maybe (v BS.ByteString)
 
 hmset' :: (MonadFail m, RedisCtx m (Either Reply))
     => BS.ByteString

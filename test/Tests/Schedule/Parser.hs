@@ -24,52 +24,52 @@ roomId = 'R' `T.cons` T.pack (replicate 32 'a')
 
 tests :: Test
 tests = TestLabel "parseCronSchedule" $ TestList [
-    TestLabel "push-message 1" $
-        fromRight [] (parseCronSchedule ("* * * * * " <> userId <> " push-message")) ~?=
+    TestLabel "push-text-message 1" $
+        fromRight [] (parseCronSchedule ("* * * * * " <> userId <> " push-text-message")) ~?=
             [
                 SchedulableAppRow {
                     sarCronExpr = "* * * * *"
                   , sarTargetId = userId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = []
                       }
                   }
             ]
-  , TestLabel "push-message 2" $
-        fromRight [] (parseCronSchedule ("0 * * * Wed " <> groupId <> " push-message abc")) ~?=
+  , TestLabel "push-text-message 2" $
+        fromRight [] (parseCronSchedule ("0 * * * Wed " <> groupId <> " push-text-message abc")) ~?=
             [
                 SchedulableAppRow {
                     sarCronExpr = "0 * * * Wed"
                   , sarTargetId = groupId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = [ "abc" ]
                       }
                   }
             ]
-  , TestLabel "push-message 3" $
-        fromRight [] (parseCronSchedule ("0 * 3 * Tue " <> roomId <> " push-message abc def")) ~?=
+  , TestLabel "push-text-message 3" $
+        fromRight [] (parseCronSchedule ("0 * 3 * Tue " <> roomId <> " push-text-message abc def")) ~?=
             [
                 SchedulableAppRow {
                     sarCronExpr = "0 * 3 * Tue"
                   , sarTargetId = roomId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = [ "abc", "def" ]
                       }
                   }
             ]
-  , TestLabel "push-message 4" $
+  , TestLabel "push-text-message 4" $
         fromRight [] (parseCronSchedule (T.unlines [
-            "0 * 3 * Tue " <> roomId <> " push-message abc def"
-          , "0 * 3 * Tue " <> roomId <> " push-message abc def ghi"
+            "0 * 3 * Tue " <> roomId <> " push-text-message abc def"
+          , "0 * 3 * Tue " <> roomId <> " push-text-message abc def ghi"
           ])) ~?= [
                 SchedulableAppRow {
                     sarCronExpr = "0 * 3 * Tue"
                   , sarTargetId = roomId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = [ "abc", "def" ]
                       }
                   }
@@ -77,18 +77,18 @@ tests = TestLabel "parseCronSchedule" $ TestList [
                     sarCronExpr = "0 * 3 * Tue"
                   , sarTargetId = roomId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = [ "abc", "def", "ghi" ]
                       }
                   }
               ]
-  , TestLabel "push-message 5" $
+  , TestLabel "push-text-message 5" $
         fromRight [] (parseCronSchedule (T.unlines [
             "\n"
-          , "0 * 3 * Tue " <> roomId <> " push-message abc def # hoge"
+          , "0 * 3 * Tue " <> roomId <> " push-text-message abc def # hoge"
           , "\n"
-          , "0 * 3 * Tue " <> roomId <> " push-message abc def ghi"
-          , "0 * 3 * Tue " <> roomId <> " push-message"
+          , "0 * 3 * Tue " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * Tue " <> roomId <> " push-text-message"
           , "\n"
           , "\n"
           ])) ~?= [
@@ -96,7 +96,7 @@ tests = TestLabel "parseCronSchedule" $ TestList [
                     sarCronExpr = "0 * 3 * Tue"
                   , sarTargetId = roomId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = [ "abc", "def" ]
                       }
                   }
@@ -104,7 +104,7 @@ tests = TestLabel "parseCronSchedule" $ TestList [
                     sarCronExpr = "0 * 3 * Tue"
                   , sarTargetId = roomId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = [ "abc", "def", "ghi" ]
                       }
                   }
@@ -112,7 +112,7 @@ tests = TestLabel "parseCronSchedule" $ TestList [
                     sarCronExpr = "0 * 3 * Tue"
                   , sarTargetId = roomId
                   , sarApp = SchedulableApp {
-                        saCmd = PushMessage
+                        saCmd = PushTextMessage
                       , saArg = []
                       }
                   }

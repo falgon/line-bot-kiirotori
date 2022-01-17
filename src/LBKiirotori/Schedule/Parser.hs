@@ -8,7 +8,7 @@ module LBKiirotori.Schedule.Parser (
 
 import           Control.Applicative        (Alternative (..))
 import           Control.Arrow              ((|||))
-import           Control.Exception.Safe     (MonadThrow (..), throw)
+import           Control.Exception.Safe     (MonadThrow (..), throwString)
 import           Control.Monad              (void)
 import           Data.Functor               (($>), (<&>))
 import           Data.Functor.Identity      (Identity)
@@ -118,9 +118,9 @@ row = SchedulableAppRow
 
 cronSchedule :: M.ParsecT Void T.Text Identity [SchedulableAppRow]
 cronSchedule = spaceConsumer
-    *> M.skipMany MC.newline
+    *> lexeme (M.skipMany MC.newline)
     *> M.sepEndBy (lexeme row) (M.skipMany MC.newline M.<|> M.eof)
 
 parseCronSchedule :: MonadThrow m => T.Text -> m [SchedulableAppRow]
-parseCronSchedule = (throw ||| pure) . M.parse cronSchedule mempty
+parseCronSchedule = ((throwString . M.errorBundlePretty) ||| pure) . M.parse cronSchedule mempty
 

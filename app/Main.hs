@@ -2,8 +2,9 @@
 module Main where
 
 import           Control.Arrow                   ((&&&), (|||))
-import           Control.Concurrent.Async        (wait, withAsync)
+import           Control.Concurrent.Async        (concurrently)
 import           Control.Exception.Safe          (throwString)
+import           Control.Monad                   (void)
 import           Control.Monad.IO.Class          (MonadIO (..))
 import           Data.MonoTraversable            (ointercalate)
 import qualified Data.Text                       as T
@@ -131,6 +132,7 @@ main = do
     cfg <- OA.putDoc (logo <> OA.hardline)
         >> putBootMessage
         >> uncurry readConfigWithLog ((optQuietLog &&& optConfigPath) opts)
-    withAsync (uncurry watchSchedule ((optQuietLog &&& optCronPath) opts) cfg) wait
-        >> mainServer (optQuietLog opts) cfg
+    void $ concurrently
+        (uncurry watchSchedule ((optQuietLog &&& optCronPath) opts) cfg)
+        (mainServer (optQuietLog opts) cfg)
 

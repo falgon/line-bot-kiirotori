@@ -68,12 +68,11 @@ watchSchedule :: (MonadThrow m, MonadIO m)
     -> LBKiirotoriConfig
     -> m ()
 watchSchedule qFlag fp cfg = liftIO $ do
-    unless qFlag (putStr "ready to boot scheduler..." >> hFlush stdout)
+    unless qFlag (putStrLn "ready to boot scheduler")
     bracket
         (ScheduleRunnerConfig <$> Redis.newConn (cfgRedis cfg) <*> pure cfg)
         (R.disconnect . srcRedisConn) $ \srCfg -> do
         bracket (runSchedule fp srCfg) (mapM_ killThread) $ \tIds -> do
-            unless qFlag $ OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
             tIdsRef <- newIORef tIds
             withManager $ \mgr -> do
                 watchDir mgr (P.fromSomeDir $ mapSomeBase P.parent fp) predicate $ \event ->

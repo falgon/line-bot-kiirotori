@@ -52,7 +52,6 @@ import           Servant.Server                                 (Application,
                                                                  hoistServer,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
-import           System.IO                                      (hFlush, stdout)
 
 import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
                                                                  LBKiirotoriConfig (..),
@@ -168,11 +167,11 @@ serverSettings :: Bool -> LBKiirotoriConfig -> Settings
 serverSettings qFlag cfg = setPort (cfgAppPort $ cfgApp cfg)
     $ setBeforeMainLoop beforeProc defaultSettings
     where
-        beforeProc = unless qFlag $ OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
+        beforeProc = pure ()
 
 mainServer :: (MonadIO m, MonadThrow m)
     => Bool
     -> LBKiirotoriConfig
     -> m ()
-mainServer qFlag cfg = liftIO $ unless qFlag (putStr "ready to boot server" *> hFlush stdout)
+mainServer qFlag cfg = liftIO $ unless qFlag (putStrLn "ready to boot server")
     *> uncurry runSettings ((serverSettings qFlag &&& kiirotoriApp) cfg)

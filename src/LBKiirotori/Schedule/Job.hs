@@ -48,10 +48,9 @@ readSchedule :: (MonadThrow m, MonadIO m)
     => P.SomeBase P.File
     -> ScheduleRunnerConfig
     -> m (C.Schedule ())
-readSchedule fp cfg = do
-    liftIO (T.readFile $ P.fromSomeFile fp)
-        >>= parseCronSchedule
-        <&> mapM_ (cronMapper cfg)
+readSchedule fp cfg = liftIO (T.readFile $ P.fromSomeFile fp)
+    >>= parseCronSchedule
+    <&> mapM_ (cronMapper cfg)
     where
         cronMapper srCfg = uncurry C.addJob . (mapAppInstance cfg &&& sarCronExpr)
 
@@ -83,8 +82,8 @@ watchSchedule qFlag fp cfg = liftIO $ do
                         >>= writeIORef tIdsRef
                 forever $ threadDelay 1000000
     where
-        predicate (Added ufp x y)    = predicate (Modified ufp x y)
         predicate (Modified ufp _ _) = Just fp == P.parseSomeFile ufp
+        predicate _                  = False
 
         putUpdateLog = putStrLn
             . printf "update detected of cron file (%s), reloading"

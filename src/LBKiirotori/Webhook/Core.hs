@@ -166,7 +166,7 @@ kiirotoriApp = serve api . server
 serverSettings :: Bool -> LBKiirotoriConfig -> Settings
 serverSettings qFlag cfg = setPort (cfgAppPort $ cfgApp cfg)
     $ setBeforeMainLoop beforeProc defaultSettings
-    where
+   where
         beforeProc = pure ()
 
 mainServer :: (MonadIO m, MonadThrow m)

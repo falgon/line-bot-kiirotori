@@ -84,14 +84,14 @@ data SchedulableAppRow = SchedulableAppRow {
 
 -- <app cmd> ::= <cmd> <arguments>
 --
--- <cmd> ::= "push-message"
+-- <cmd> ::= "push-text-message"
 --
 -- <arguments> ::= ""
 --      | <separator> <string> (<arguments>)*
 appCmd :: Ord e => M.ParsecT e T.Text m SchedulableApp
 appCmd = SchedulableApp
     <$> M.choice [
-            read . T.unpack <$> MC.string "push-message"
+            read . T.unpack <$> MC.string "push-text-message"
           ]
     <*> arguments
     where

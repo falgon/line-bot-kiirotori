@@ -46,21 +46,18 @@ mapAppInstance cfg (SchedulableAppRow _ tId (SchedulableApp PushTextMessage arg)
 
 readSchedule :: (MonadThrow m, MonadIO m)
     => P.SomeBase P.File
-    -> LBKiirotoriConfig
+    -> ScheduleRunnerConfig
     -> m (C.Schedule ())
 readSchedule fp cfg = do
-    srCfg <- ScheduleRunnerConfig
-        <$> Redis.newConn (cfgRedis cfg)
-        <*> pure cfg
     liftIO (T.readFile $ P.fromSomeFile fp)
         >>= parseCronSchedule
-        <&> mapM_ (cronMapper srCfg)
+        <&> mapM_ (cronMapper cfg)
     where
-        cronMapper srCfg = uncurry C.addJob . (mapAppInstance srCfg &&& sarCronExpr)
+        cronMapper srCfg = uncurry C.addJob . (mapAppInstance cfg &&& sarCronExpr)
 
 runSchedule :: (MonadThrow m, MonadIO m)
     => P.SomeBase P.File
-    -> LBKiirotoriConfig
+    -> ScheduleRunnerConfig
     -> m [ThreadId]
 runSchedule fp cfg = readSchedule fp cfg
     >>= liftIO . C.execSchedule
@@ -72,7 +69,10 @@ watchSchedule :: (MonadThrow m, MonadIO m)
     -> m ()
 watchSchedule qFlag fp cfg = liftIO $ do
     unless qFlag (putStr "ready to boot scheduler..." >> hFlush stdout)
-    bracket (runSchedule fp cfg) (mapM_ killThread) $ \tIds -> do
+    srCfg <- ScheduleRunnerConfig
+        <$> Redis.newConn (cfgRedis cfg)
+        <*> pure cfg
+    bracket (runSchedule fp srCfg) (mapM_ killThread) $ \tIds -> do
         unless qFlag $ OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
         tIdsRef <- newIORef tIds
         withManager $ \mgr -> do
@@ -80,7 +80,7 @@ watchSchedule qFlag fp cfg = liftIO $ do
                 unless qFlag (putUpdateLog event)
                     >> readIORef tIdsRef
                     >>= mapM_ killThread
-                    >> runSchedule fp cfg
+                    >> runSchedule fp srCfg
                     >>= writeIORef tIdsRef
             forever $ threadDelay 1000000
     where

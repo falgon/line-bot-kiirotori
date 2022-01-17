@@ -66,7 +66,7 @@ data SchedulableAppCmd = PushTextMessage
 
 instance Read SchedulableAppCmd where
     readsPrec _ s
-        | "push-text-message" `isPrefixOf` s = [(PushTextMessage, drop 12 s)]
+        | "push-text-message" `isPrefixOf` s = [(PushTextMessage, drop 17 s)]
         | otherwise = []
 
 data SchedulableApp = SchedulableApp {

@@ -4,29 +4,31 @@ module LBKiirotori.Config (
     LBKiirotoriConfig (..)
   , LBKiirotoriAppConfig (..)
   , LBKiirotoriLineConfig (..)
-  , readConfig
+  , readConfigWithLog
 ) where
 
-import           Control.Arrow          ((|||))
-import           Control.Exception.Safe (MonadThrow (..), throwString)
-import           Control.Monad          (liftM4)
-import           Control.Monad.IO.Class (MonadIO (..))
-import           Control.Monad.Logger   (LoggingT)
-import           Control.Monad.Reader   (ReaderT, asks)
-import qualified Data.ByteString        as B
-import           Data.Functor           ((<&>))
-import qualified Data.HashMap.Lazy      as HM
-import           Data.Int               (Int64)
-import           Data.String            (IsString (..))
-import qualified Data.Text              as T
-import qualified Data.Text.Encoding     as T
-import qualified Data.Text.IO           as T
-import qualified Database.MySQL.Base    as MySQL
-import qualified Database.Redis         as Redis
-import qualified Path                   as P
-import           Servant.Server         (Handler)
-import           Text.Toml              (parseTomlDoc)
-import           Text.Toml.Types        (Node (..), Table)
+import           Control.Arrow                   ((|||))
+import           Control.Exception.Safe          (MonadThrow (..), throwString)
+import           Control.Monad                   (liftM4, unless)
+import           Control.Monad.IO.Class          (MonadIO (..))
+import           Control.Monad.Logger            (LoggingT)
+import           Control.Monad.Reader            (ReaderT, asks)
+import qualified Data.ByteString                 as B
+import           Data.Functor                    ((<&>))
+import qualified Data.HashMap.Lazy               as HM
+import           Data.Int                        (Int64)
+import           Data.String                     (IsString (..))
+import qualified Data.Text                       as T
+import qualified Data.Text.Encoding              as T
+import qualified Data.Text.IO                    as T
+import qualified Database.MySQL.Base             as MySQL
+import qualified Database.Redis                  as Redis
+import qualified Options.Applicative.Help.Pretty as OA
+import qualified Path                            as P
+import           Servant.Server                  (Handler)
+import           System.IO                       (hFlush, stdout)
+import           Text.Toml                       (parseTomlDoc)
+import           Text.Toml.Types                 (Node (..), Table)
 
 data LBKiirotoriAppConfig = LBKiirotoriAppConfig {
     cfgAppWelcome     :: T.Text
@@ -180,3 +182,10 @@ readConfig fp = do
         (lookupTable "redis" tables >>= readRedisConfig)
         (lookupTable "line" tables >>= readLineConfig)
 
+readConfigWithLog :: (MonadIO m, MonadThrow m)
+    => Bool
+    -> P.SomeBase P.File
+    -> m LBKiirotoriConfig
+readConfigWithLog isQuiet fp = unless isQuiet (liftIO $ putStr "reading config file..." *> hFlush stdout)
+    *> readConfig fp
+    <* unless isQuiet (liftIO $ OA.putDoc (OA.dullgreen $ OA.text "done" <> OA.hardline))

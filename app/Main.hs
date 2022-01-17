@@ -10,7 +10,9 @@ import qualified Data.Text                       as T
 import qualified Data.Text.IO                    as T
 import           Data.Version                    (showVersion)
 import           Development.GitRev              (gitHash)
-import           Network.Wai.Handler.Warp        (run)
+import           Network.Wai.Handler.Warp        (Settings, defaultSettings,
+                                                  runSettings,
+                                                  setBeforeMainLoop, setPort)
 import qualified Options.Applicative             as OA
 import qualified Options.Applicative.Help.Pretty as OA
 import           Path                            (Dir, File, Rel)
@@ -18,10 +20,12 @@ import qualified Path                            as P
 import qualified Path.IO                         as P
 import qualified Paths_line_bot_kiirotori        as PR
 import qualified System.Cron.Schedule            as C
+import           System.IO                       (hFlush, stdout)
 import           Text.Printf                     (printf)
 import           Text.Toml                       (parseTomlDoc)
 
-import           LBKiirotori.Config              (readConfig)
+import           LBKiirotori.Config              (readConfigWithLog)
+import           LBKiirotori.Internal.Utils      (getCurrentLocalTime)
 import           LBKiirotori.Webhook             (kiirotoriApp)
 
 data Cmd = CmdServe
@@ -92,18 +96,34 @@ parseOptions :: MonadIO m => m Opts
 parseOptions = P.getHomeDir
     >>= liftIO . OA.execParser . optsParser
 
-bootMessage :: String
-bootMessage = printf "version: %s\nbuilt: commit hash: %s"
-    (showVersion PR.version)
-    ($(gitHash) :: String)
+putBootMessage :: MonadIO m => m ()
+putBootMessage = do
+    c <- getCurrentLocalTime
+    liftIO $ OA.putDoc $ ointercalate OA.line [
+        OA.underline (OA.text "version:") OA.<+> OA.bold (OA.text $ showVersion PR.version)
+      , OA.underline (OA.text "commit hash:") OA.<+> OA.bold (OA.text ($(gitHash) :: String))
+      , OA.hardline <> OA.text "started at" OA.<+> OA.text (show c) <> OA.hardline
+      ]
+
+serverSettings :: Settings
+serverSettings = setPort 48080
+    $ setBeforeMainLoop beforeProc defaultSettings
+    where
+        beforeProc = OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
 
 main :: IO ()
 main = do
     opts <- parseOptions
     OA.putDoc (logo <> OA.hardline)
-        >> putStrLn bootMessage
+        >> putBootMessage
+        >> readConfigWithLog False (optConfigPath opts)
+        >>= (\x -> putStr "ready to boot server..."
+            >> hFlush stdout
+            >> runSettings serverSettings (kiirotoriApp x))
+
+        {-
         >> putStrLn "boot scheduler..."
             >> withAsync (C.execSchedule (C.addJob (putStrLn "hoge") "* * * * *")) wait
         >> putStrLn "boot server..."
             >> readConfig (optConfigPath opts)
-            >>= run 48080 . kiirotoriApp
+            >>= run 48080 . kiirotoriApp -}

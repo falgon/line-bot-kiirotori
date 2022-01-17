@@ -5,8 +5,10 @@ module LBKiirotori.Webhook.Core (
 ) where
 
 import           Control.Arrow                                  ((&&&), (|||))
-import           Control.Exception.Safe                         (MonadThrow)
-import           Control.Monad                                  (forM_, unless)
+import           Control.Exception.Safe                         (MonadThrow,
+                                                                 bracket)
+import           Control.Monad                                  (forM_, unless,
+                                                                 void)
 import           Control.Monad.Except                           (MonadError (..))
 import           Control.Monad.IO.Class                         (MonadIO (..))
 import           Control.Monad.Logger                           (LoggingT (..),
@@ -29,6 +31,8 @@ import           Data.String                                    (IsString (..))
 import qualified Data.Text                                      as T
 import qualified Data.Text.Encoding                             as T
 import qualified Data.Vector                                    as V
+import qualified Database.MySQL.Base                            as MB
+import qualified Database.Redis                                 as R
 import qualified Network.HTTP.Media                             as M
 import           Network.Wai.Handler.Warp                       (Port, Settings,
                                                                  defaultSettings,
@@ -151,12 +155,16 @@ loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
     -> Maybe LineSignature
     -> B.ByteString
     -> Handler T.Text
-loggingServer f cfg s b = do
-    cfg <- LineBotHandlerConfig
+loggingServer f cfg s b = bracket
+    (LineBotHandlerConfig
         <$> MySQL.newConn (cfgMySQL cfg)
         <*> Redis.newConn (cfgRedis cfg)
-        <*> pure cfg
-    hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
+        <*> pure cfg)
+    close
+    $ \cfg -> hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
+    where
+        close x = liftIO (MB.close $ lbhMySQLConn x)
+            >> liftIO (R.disconnect $ lbhRedisConn x)
 
 server :: LBKiirotoriConfig -> Server API
 server = loggingServer mainHandler

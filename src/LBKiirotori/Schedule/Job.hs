@@ -69,20 +69,20 @@ watchSchedule :: (MonadThrow m, MonadIO m)
     -> m ()
 watchSchedule qFlag fp cfg = liftIO $ do
     unless qFlag (putStr "ready to boot scheduler..." >> hFlush stdout)
-    srCfg <- ScheduleRunnerConfig
-        <$> Redis.newConn (cfgRedis cfg)
-        <*> pure cfg
-    bracket (runSchedule fp srCfg) (mapM_ killThread) $ \tIds -> do
-        unless qFlag $ OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
-        tIdsRef <- newIORef tIds
-        withManager $ \mgr -> do
-            watchDir mgr (P.fromSomeDir $ mapSomeBase P.parent fp) predicate $ \event ->
-                unless qFlag (putUpdateLog event)
-                    >> readIORef tIdsRef
-                    >>= mapM_ killThread
-                    >> runSchedule fp srCfg
-                    >>= writeIORef tIdsRef
-            forever $ threadDelay 1000000
+    bracket
+        (ScheduleRunnerConfig <$> Redis.newConn (cfgRedis cfg) <*> pure cfg)
+        (R.disconnect . srcRedisConn) $ \srCfg -> do
+        bracket (runSchedule fp srCfg) (mapM_ killThread) $ \tIds -> do
+            unless qFlag $ OA.putDoc $ OA.dullgreen $ OA.text "done" <> OA.hardline
+            tIdsRef <- newIORef tIds
+            withManager $ \mgr -> do
+                watchDir mgr (P.fromSomeDir $ mapSomeBase P.parent fp) predicate $ \event ->
+                    unless qFlag (putUpdateLog event)
+                        >> readIORef tIdsRef
+                        >>= mapM_ killThread
+                        >> runSchedule fp srCfg
+                        >>= writeIORef tIdsRef
+                forever $ threadDelay 1000000
     where
         predicate (Added ufp x y)    = predicate (Modified ufp x y)
         predicate (Modified ufp _ _) = Just fp == P.parseSomeFile ufp

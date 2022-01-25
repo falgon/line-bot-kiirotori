@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 57d7236f56a5c4e2553c48a051e720eb0a8ca5a8181a7f75915f1d4511a555fd
+-- hash: 3d0510dc7d2ec8d965a8c8c843e36d2216c4413225086ef136d671282d8e7c2f
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -48,6 +48,7 @@ library
       LBKiirotori.Data.MessageObject
       LBKiirotori.Database.MySQL
       LBKiirotori.Database.Redis
+      LBKiirotori.Internal.Cron
       LBKiirotori.Internal.Exceptions
       LBKiirotori.Internal.HTTP
       LBKiirotori.Internal.Utils

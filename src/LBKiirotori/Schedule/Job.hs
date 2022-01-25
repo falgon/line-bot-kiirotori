@@ -30,6 +30,7 @@ import           LBKiirotori.AccessToken         (getAccessToken)
 import           LBKiirotori.API.PushMessage     (PushMessage (..), pushMessage)
 import           LBKiirotori.Config              (LBKiirotoriConfig (..))
 import           LBKiirotori.Data.MessageObject  (MessageBody (..), textMessage)
+import           LBKiirotori.Internal.Cron       (execScheduleWithLocalTime)
 import           LBKiirotori.Internal.Utils      (mapSomeBase, prjSomeBaseM)
 import           LBKiirotori.Schedule.Data
 import           LBKiirotori.Schedule.Parser
@@ -61,7 +62,7 @@ runSchedule :: (MonadThrow m, MonadIO m)
     -> ScheduleRunnerConfig
     -> m [ThreadId]
 runSchedule fp cfg = readSchedule fp cfg
-    >>= liftIO . C.execSchedule
+    >>= execScheduleWithLocalTime
 
 withScheduleRef :: P.SomeBase P.File
     -> ScheduleRunnerConfig

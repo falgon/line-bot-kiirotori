@@ -10,6 +10,7 @@ module LBKiirotori.Internal.Utils (
   , getCurrentLocalTime
   , doubleToUTCTime
   , mapSomeBase
+  , prjSomeBaseM
 ) where
 
 import           Control.Arrow             ((|||))
@@ -76,6 +77,11 @@ mapSomeBase :: (forall b. P.Path b t -> P.Path b t') -> P.SomeBase t -> P.SomeBa
 mapSomeBase f = \case
     P.Abs a -> P.Abs $ f a
     P.Rel r -> P.Rel $ f r
+
+prjSomeBaseM :: (forall b. P.Path b t -> m a) -> P.SomeBase t -> m a
+prjSomeBaseM f = \case
+    P.Abs a -> f a
+    P.Rel r -> f r
 
 instance MonadParallel m => MonadParallel (LoggingT m) where
     bindM2 f ma mb = LoggingT $ \g ->

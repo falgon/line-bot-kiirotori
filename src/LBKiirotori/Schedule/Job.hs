@@ -15,12 +15,14 @@ import           Control.Monad.Trans.Reader      (ReaderT (..))
 import           Data.Functor                    ((<&>))
 import           Data.IORef                      (IORef, newIORef, readIORef,
                                                   writeIORef)
+import qualified Data.Text                       as T
 import qualified Data.Text.IO                    as T
 import qualified Database.Redis                  as R
 import qualified Options.Applicative.Help.Pretty as OA
 import qualified Path                            as P
 import qualified Path.IO                         as P
 import qualified System.Cron.Schedule            as C
+import qualified System.Cron.Types               as C
 import           System.FSNotify                 (Event (..), eventPath,
                                                   watchDir, withManager)
 import           System.IO                       (hFlush, stdout)
@@ -30,14 +32,15 @@ import           LBKiirotori.AccessToken         (getAccessToken)
 import           LBKiirotori.API.PushMessage     (PushMessage (..), pushMessage)
 import           LBKiirotori.Config              (LBKiirotoriConfig (..))
 import           LBKiirotori.Data.MessageObject  (MessageBody (..), textMessage)
-import           LBKiirotori.Internal.Utils      (mapSomeBase, prjSomeBaseM)
+import           LBKiirotori.Internal.Utils      (mapSomeBase, prjSomeBaseM,
+                                                  tshow)
 import           LBKiirotori.Schedule.Data
 import           LBKiirotori.Schedule.Parser
 
 mapAppInstance :: ScheduleRunnerConfig
-    -> SchedulableAppRow
+    -> ScheduleEntry
     -> IO ()
-mapAppInstance cfg (SchedulableAppRow _ tId (SchedulableApp PushTextMessage arg)) =
+mapAppInstance cfg (ScheduleEntry _ (TargetSchedule tId (SchedulableApp PushTextMessage arg))) =
     flip runReaderT cfg $ getAccessToken
         >>= lift . flip pushMessage messageObject
     where
@@ -51,10 +54,10 @@ readSchedule :: (MonadThrow m, MonadIO m)
     -> ScheduleRunnerConfig
     -> m (C.Schedule ())
 readSchedule fp cfg = liftIO (T.readFile $ P.fromSomeFile fp)
-    >>= parseCronSchedule
+    >>= parseSchedule
     <&> mapM_ (cronMapper cfg)
     where
-        cronMapper srCfg = uncurry C.addJob . (mapAppInstance cfg &&& sarCronExpr)
+        cronMapper srCfg = uncurry C.addJob . (mapAppInstance cfg &&& (C.serializeCronSchedule . seSchedule))
 
 runSchedule :: (MonadThrow m, MonadIO m)
     => P.SomeBase P.File

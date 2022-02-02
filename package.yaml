@@ -57,6 +57,7 @@ dependencies:
 - cron
 - async
 - fsnotify
+- containers
 
 flags:
   release:

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 57d7236f56a5c4e2553c48a051e720eb0a8ca5a8181a7f75915f1d4511a555fd
+-- hash: 4391603612549634fd42a587ad936cf4794812c7f2a469c7afcfc22e398970c6
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -87,6 +87,7 @@ library
     , base >=4.7 && <5
     , base64-bytestring
     , bytestring
+    , containers
     , cron
     , cryptohash-sha256
     , extra
@@ -136,6 +137,7 @@ executable line-bot-kiirotori
     , base >=4.7 && <5
     , base64-bytestring
     , bytestring
+    , containers
     , cron
     , cryptohash-sha256
     , extra
@@ -189,6 +191,7 @@ test-suite line-bot-kiirotori-test
     , base >=4.7 && <5
     , base64-bytestring
     , bytestring
+    , containers
     , cron
     , cryptohash-sha256
     , extra

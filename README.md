@@ -29,6 +29,12 @@ stack build --fast
 stack exec line-bot-kiirotori -- serve -c <config path> -s <cron path>
 ```
 
+## Test
+
+```bash
+stack test --fast
+```
+
 ## Configration
 
 Put the following configuration file in any location (default: `~/.config/lb-kiitoroti/config.toml`, `~/.config/lb-kiirotori/schedule.cron`).

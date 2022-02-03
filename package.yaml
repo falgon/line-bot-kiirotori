@@ -54,6 +54,10 @@ dependencies:
 - fixed-vector
 - mysql-haskell
 - io-streams
+- cron
+- async
+- fsnotify
+- containers
 
 flags:
   release:
@@ -76,6 +80,8 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - line-bot-kiirotori
+    - gitrev
+    - mono-traversable
 
 tests:
   line-bot-kiirotori-test:
@@ -87,3 +93,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - line-bot-kiirotori
+    - HUnit
+    - hspec
+    - hspec-core
+    - hspec-contrib

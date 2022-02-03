@@ -1,9 +1,8 @@
 {-# LANGUAGE CPP, ExplicitNamespaces, FlexibleContexts, ImplicitParams,
-             Rank2Types, TypeOperators #-}
+             TypeOperators #-}
 module LBKiirotori.Internal.Exceptions (
     invalidArgument
   , stringException
-  , liftMTE
 ) where
 
 import           Control.Arrow          ((|||))
@@ -30,6 +29,3 @@ stringException s = StringException s ()
 #endif
 
 instance Exception JWTError
-
-liftMTE :: MonadThrow m => Either String c -> m c
-liftMTE = throwString ||| pure

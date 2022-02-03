@@ -17,5 +17,5 @@ import           LBKiirotori.Webhook.EventHandlers.Message.Utils  (replyOneText)
 echoCmd :: MessageEvent ()
 echoCmd = do
     txtBody <- MC.string' "echo" *> lexeme MC.space1 *> M.getInput
-    lift (lift $ ($(logInfo) "requested echo command, send reply message"))
+    lift (lift ($(logInfo) "requested echo command, send reply message"))
         >> replyOneText txtBody

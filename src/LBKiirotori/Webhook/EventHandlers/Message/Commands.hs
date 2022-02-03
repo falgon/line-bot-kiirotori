@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.Webhook.EventHandlers.Message.Commands (
     cmd
 ) where

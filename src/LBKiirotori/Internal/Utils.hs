@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase, RankNTypes, ScopedTypeVariables #-}
 module LBKiirotori.Internal.Utils (
     tshow
   , stripFirstToLowerLabeledOption
@@ -8,27 +9,27 @@ module LBKiirotori.Internal.Utils (
   , localTimeToCurrentUTCTimeZone
   , getCurrentLocalTime
   , doubleToUTCTime
+  , mapSomeBase
+  , prjSomeBaseM
 ) where
 
-import           Control.Arrow                   ((|||))
-import           Control.Exception.Safe          (MonadThrow (..), throwString)
-import           Control.Monad.IO.Class          (MonadIO (..))
-import           Control.Monad.Logger            (LoggingT (..))
-import           Control.Monad.Parallel          (MonadParallel (..))
-import           Control.Monad.Trans.Maybe       (MaybeT (..))
+import           Control.Arrow             ((|||))
+import           Control.Exception.Safe    (MonadThrow (..), throwString)
+import           Control.Monad.IO.Class    (MonadIO (..))
+import           Control.Monad.Logger      (LoggingT (..))
+import           Control.Monad.Parallel    (MonadParallel (..))
+import           Control.Monad.Trans.Maybe (MaybeT (..))
 import           Data.Aeson
-import qualified Data.ByteString.Lazy            as BL
-import           Data.Char                       (toLower)
-import qualified Data.Text                       as T
-import           Data.Time.Clock                 (UTCTime, getCurrentTime)
-import           Data.Time.Clock.POSIX           (posixSecondsToUTCTime)
-import           Data.Time.LocalTime             (LocalTime, getCurrentTimeZone,
-                                                  localTimeToUTC,
-                                                  utcToLocalTime)
-import           Data.Tuple.Extra                (dupe, first, second)
-import           Servant.Server                  (Handler (..))
-
-import           LBKiirotori.Internal.Exceptions (liftMTE)
+import qualified Data.ByteString.Lazy      as BL
+import           Data.Char                 (toLower)
+import qualified Data.Text                 as T
+import           Data.Time.Clock           (UTCTime, getCurrentTime)
+import           Data.Time.Clock.POSIX     (posixSecondsToUTCTime)
+import           Data.Time.LocalTime       (LocalTime, getCurrentTimeZone,
+                                            localTimeToUTC, utcToLocalTime)
+import           Data.Tuple.Extra          (dupe, first, second)
+import qualified Path                      as P
+import           Servant.Server            (Handler (..))
 
 tshow :: Show a => a -> T.Text
 tshow = T.pack . show
@@ -70,9 +71,21 @@ getCurrentLocalTime = liftIO getCurrentTime
 doubleToUTCTime :: Double -> UTCTime
 doubleToUTCTime = posixSecondsToUTCTime . realToFrac
 
+-- It has existed since path library 0.9.1, but since 0.8.0 is used in this project.
+-- c.f. https://github.com/commercialhaskell/path/blob/master/CHANGELOG#L7
+mapSomeBase :: (forall b. P.Path b t -> P.Path b t') -> P.SomeBase t -> P.SomeBase t'
+mapSomeBase f = \case
+    P.Abs a -> P.Abs $ f a
+    P.Rel r -> P.Rel $ f r
+
+prjSomeBaseM :: (forall b. P.Path b t -> m a) -> P.SomeBase t -> m a
+prjSomeBaseM f = \case
+    P.Abs a -> f a
+    P.Rel r -> f r
+
 instance MonadParallel m => MonadParallel (LoggingT m) where
     bindM2 f ma mb = LoggingT $ \g ->
-        bindM2 ((.) (flip runLoggingT g) . f) (runLoggingT ma g) (runLoggingT mb g)
+        bindM2 ((.) (`runLoggingT` g) . f) (runLoggingT ma g) (runLoggingT mb g)
 
 instance MonadParallel Handler where
     bindM2 f ma mb = Handler $

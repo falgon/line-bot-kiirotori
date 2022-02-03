@@ -1,32 +1,34 @@
-{-# LANGUAGE CPP, DerivingStrategies, GeneralizedNewtypeDeriving,
-             OverloadedStrings #-}
+{-# LANGUAGE CPP, DerivingStrategies, OverloadedStrings #-}
 module LBKiirotori.Config (
     LBKiirotoriConfig (..)
   , LBKiirotoriAppConfig (..)
   , LBKiirotoriLineConfig (..)
-  , readConfig
+  , readConfigWithLog
 ) where
 
-import           Control.Arrow          ((|||))
-import           Control.Exception.Safe (MonadThrow (..), throwString)
-import           Control.Monad          (liftM4)
-import           Control.Monad.IO.Class (MonadIO (..))
-import           Control.Monad.Logger   (LoggingT)
-import           Control.Monad.Reader   (ReaderT, asks)
-import qualified Data.ByteString        as B
-import           Data.Functor           ((<&>))
-import qualified Data.HashMap.Lazy      as HM
-import           Data.Int               (Int64)
-import           Data.String            (IsString (..))
-import qualified Data.Text              as T
-import qualified Data.Text.Encoding     as T
-import qualified Data.Text.IO           as T
-import qualified Database.MySQL.Base    as MySQL
-import qualified Database.Redis         as Redis
-import qualified Path                   as P
-import           Servant.Server         (Handler)
-import           Text.Toml              (parseTomlDoc)
-import           Text.Toml.Types        (Node (..), Table)
+import           Control.Arrow                   ((|||))
+import           Control.Exception.Safe          (MonadThrow (..), throwString)
+import           Control.Monad                   (liftM4, unless)
+import           Control.Monad.IO.Class          (MonadIO (..))
+import           Control.Monad.Logger            (LoggingT)
+import           Control.Monad.Reader            (ReaderT, asks)
+import qualified Data.ByteString                 as B
+import           Data.Functor                    ((<&>))
+import qualified Data.HashMap.Lazy               as HM
+import           Data.Int                        (Int64)
+import           Data.String                     (IsString (..))
+import qualified Data.Text                       as T
+import qualified Data.Text.Encoding              as T
+import qualified Data.Text.IO                    as T
+import qualified Database.MySQL.Base             as MySQL
+import qualified Database.Redis                  as Redis
+import           Network.Wai.Handler.Warp        (Port)
+import qualified Options.Applicative.Help.Pretty as OA
+import qualified Path                            as P
+import           Servant.Server                  (Handler)
+import           System.IO                       (hFlush, stdout)
+import           Text.Toml                       (parseTomlDoc)
+import           Text.Toml.Types                 (Node (..), Table)
 
 data LBKiirotoriAppConfig = LBKiirotoriAppConfig {
     cfgAppWelcome     :: T.Text
@@ -35,15 +37,16 @@ data LBKiirotoriAppConfig = LBKiirotoriAppConfig {
   , cfgAppFailedAuth  :: T.Text
   , cfgAppAlreadyAuth :: T.Text
   , cfgAppUnknown     :: T.Text
+  , cfgAppPort        :: Port
   }
   deriving stock Show
 #ifndef RELEASE
 instance Semigroup LBKiirotoriAppConfig where
-    (LBKiirotoriAppConfig l1 l2 l3 l4 l5 l6) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5 r6) =
-        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5) (l6 <> r6)
+    (LBKiirotoriAppConfig l1 l2 l3 l4 l5 l6 _) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5 r6 _) =
+        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5) (l6 <> r6) 80
 
 instance Monoid LBKiirotoriAppConfig where
-    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty mempty
+    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty mempty 80
 #endif
 
 data LBKiirotoriLineConfig = LBKiirotoriLineConfig {
@@ -122,6 +125,7 @@ readAppConfig tb = LBKiirotoriAppConfig
     <*> lookupString "failed_auth" tb
     <*> lookupString "already_auth" tb
     <*> lookupString "unknown_cmd_message" tb
+    <*> lookupInteger "port" tb
 
 readRedisConfig :: MonadThrow m => Table -> m Redis.ConnectInfo
 readRedisConfig redisTable = do
@@ -180,3 +184,10 @@ readConfig fp = do
         (lookupTable "redis" tables >>= readRedisConfig)
         (lookupTable "line" tables >>= readLineConfig)
 
+readConfigWithLog :: (MonadIO m, MonadThrow m)
+    => Bool
+    -> P.SomeBase P.File
+    -> m LBKiirotoriConfig
+readConfigWithLog isQuiet fp = unless isQuiet (liftIO $ putStr "reading config file..." *> hFlush stdout)
+    *> readConfig fp
+    <* unless isQuiet (liftIO $ OA.putDoc (OA.dullgreen $ OA.text "done" <> OA.hardline))

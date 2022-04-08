@@ -35,11 +35,11 @@ import           LBKiirotori.Internal.Utils      (decodeJSON)
 getJwk :: (MonadThrow m, AccessTokenMonad m) => m JWK
 getJwk = lineJWKSet >>= decodeJSON . BL.fromStrict
 
-newClaimsSet :: (MonadIO m, AccessTokenMonad m)
+newClaimsSet :: (MonadIO m, MonadThrow m, AccessTokenMonad m)
     => Scientific
     -> m ClaimsSet
 newClaimsSet seconds
-    | seconds <= tokenExpMax = do
+    | 0 <= seconds && seconds <= tokenExpMax = do
         channelID <- fromString . BC.unpack <$> lineChanId
         expDate <- NumericDate . addUTCTime jwtAssertionMax <$> liftIO getCurrentTime
         pure $ emptyClaimsSet
@@ -48,6 +48,7 @@ newClaimsSet seconds
             & claimAud ?~ Audience ["https://api.line.me/"]
             & claimExp ?~ expDate
             & unregisteredClaims .~ HM.singleton "token_exp" (Number seconds)
+    | otherwise = throwString "out of range [0, 2592000]"
     where
         jwtAssertionMax = 30 * 60
         tokenExpMax = 60 * 60 * 24 * 30 -- The max lifetime of a channel access token is 30 days.

@@ -6,7 +6,7 @@ LINE Bot for personal use that I use with [Messaging API](https://developers.lin
 
 - systemd
 - nginx
-    - Virtual host settings required
+  - Virtual host settings required
 - docker
 
 ## Install
@@ -75,7 +75,7 @@ jwk_set_key = "" # jwk private set key, c.f. https://developers.line.biz/en/docs
 ```
 
 ```cron
-# Send a push message to the 
+# Send a push message to the
 # user UXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX every minute, "hello!"
 * * * * * UXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX push-text-message hello!
 ```

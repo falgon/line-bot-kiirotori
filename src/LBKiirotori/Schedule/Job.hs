@@ -10,8 +10,11 @@ import           Control.Exception.Safe          (MonadThrow, bracket)
 import           Control.Monad                   (forever, mapM_, unless, (>=>))
 import           Control.Monad.Extra             (ifM)
 import           Control.Monad.IO.Class          (MonadIO (..))
+import           Control.Monad.Parallel          (MonadParallel)
 import           Control.Monad.Trans             (lift)
 import           Control.Monad.Trans.Reader      (ReaderT (..), asks)
+import           Control.Retry                   (constantDelay, limitRetries,
+                                                  recoverAll)
 import           Data.Functor                    ((<&>))
 import           Data.IORef                      (IORef, newIORef, readIORef,
                                                   writeIORef)
@@ -29,6 +32,7 @@ import           System.IO                       (hFlush, stdout)
 import           Text.Printf                     (printf)
 
 import           LBKiirotori.AccessToken         (getAccessToken)
+import           LBKiirotori.AccessToken.Class
 import           LBKiirotori.API.PushMessage     (PushMessage (..), pushMessage)
 import           LBKiirotori.Config              (LBKiirotoriAppConfig (..),
                                                   LBKiirotoriConfig (..))
@@ -41,16 +45,16 @@ import           LBKiirotori.Schedule.Parser
 mapAppInstance :: ScheduleRunnerConfig
     -> ScheduleEntry
     -> IO ()
-mapAppInstance cfg (ScheduleEntry _ (TargetSchedule tId (SchedulableApp PushTextMessage arg))) =
-    flip runReaderT cfg $ do
-        retryMax <- asks $ cfgAppRetryMax . cfgApp . srcCfg
-        getAccessToken
-            >>= lift . flip pushMessage messageObject
+mapAppInstance cfg (ScheduleEntry _ (TargetSchedule tId (SchedulableApp PushTextMessage arg))) = do
+    rPolicy <- runReaderT (asks $ retryPolicy . cfgAppRetryMax . cfgApp . srcCfg) cfg
+    recoverAll rPolicy $ const $ flip runReaderT cfg $
+        getAccessToken >>= lift . flip pushMessage messageObject
     where
         messageObject = PushMessage {
             pmTo = tId
           , pmMessages = map (\x -> MBText $ textMessage x Nothing Nothing) arg
           }
+        retryPolicy retryNum = constantDelay 0 <> limitRetries retryNum
 
 readSchedule :: (MonadThrow m, MonadIO m)
     => P.SomeBase P.File

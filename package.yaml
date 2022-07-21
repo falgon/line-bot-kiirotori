@@ -58,6 +58,7 @@ dependencies:
 - async
 - fsnotify
 - containers
+- retry
 
 flags:
   release:

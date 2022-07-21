@@ -38,15 +38,16 @@ data LBKiirotoriAppConfig = LBKiirotoriAppConfig {
   , cfgAppAlreadyAuth :: T.Text
   , cfgAppUnknown     :: T.Text
   , cfgAppPort        :: Port
+  , cfgAppRetryMax    :: Int
   }
   deriving stock Show
 #ifndef RELEASE
 instance Semigroup LBKiirotoriAppConfig where
-    (LBKiirotoriAppConfig l1 l2 l3 l4 l5 l6 _) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5 r6 _) =
-        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5) (l6 <> r6) 80
+    (LBKiirotoriAppConfig l1 l2 l3 l4 l5 l6 _ l8) <> (LBKiirotoriAppConfig r1 r2 r3 r4 r5 r6 _ r8) =
+        LBKiirotoriAppConfig (l1 <> r1) (l2 <> r2) (l3 <> r3) (l4 <> r4) (l5 <> r5) (l6 <> r6) 80 (l8 + r8)
 
 instance Monoid LBKiirotoriAppConfig where
-    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty mempty 80
+    mempty = LBKiirotoriAppConfig mempty mempty mempty mempty mempty mempty 80 0
 #endif
 
 data LBKiirotoriLineConfig = LBKiirotoriLineConfig {
@@ -126,6 +127,7 @@ readAppConfig tb = LBKiirotoriAppConfig
     <*> lookupString "already_auth" tb
     <*> lookupString "unknown_cmd_message" tb
     <*> lookupInteger "port" tb
+    <*> lookupInteger "retry_max" tb
 
 readRedisConfig :: MonadThrow m => Table -> m Redis.ConnectInfo
 readRedisConfig redisTable = do

@@ -11,7 +11,7 @@ import           Control.Monad                   (forever, mapM_, unless, (>=>))
 import           Control.Monad.Extra             (ifM)
 import           Control.Monad.IO.Class          (MonadIO (..))
 import           Control.Monad.Trans             (lift)
-import           Control.Monad.Trans.Reader      (ReaderT (..))
+import           Control.Monad.Trans.Reader      (ReaderT (..), asks)
 import           Data.Functor                    ((<&>))
 import           Data.IORef                      (IORef, newIORef, readIORef,
                                                   writeIORef)
@@ -30,7 +30,8 @@ import           Text.Printf                     (printf)
 
 import           LBKiirotori.AccessToken         (getAccessToken)
 import           LBKiirotori.API.PushMessage     (PushMessage (..), pushMessage)
-import           LBKiirotori.Config              (LBKiirotoriConfig (..))
+import           LBKiirotori.Config              (LBKiirotoriAppConfig (..),
+                                                  LBKiirotoriConfig (..))
 import           LBKiirotori.Data.MessageObject  (MessageBody (..), textMessage)
 import           LBKiirotori.Internal.Utils      (mapSomeBase, prjSomeBaseM,
                                                   tshow)
@@ -41,8 +42,10 @@ mapAppInstance :: ScheduleRunnerConfig
     -> ScheduleEntry
     -> IO ()
 mapAppInstance cfg (ScheduleEntry _ (TargetSchedule tId (SchedulableApp PushTextMessage arg))) =
-    flip runReaderT cfg $ getAccessToken
-        >>= lift . flip pushMessage messageObject
+    flip runReaderT cfg $ do
+        retryMax <- asks $ cfgAppRetryMax . cfgApp . srcCfg
+        getAccessToken
+            >>= lift . flip pushMessage messageObject
     where
         messageObject = PushMessage {
             pmTo = tId

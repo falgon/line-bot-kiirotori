@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveAnyClass, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
 import           Control.Arrow                   ((&&&), (|||))
@@ -17,7 +19,8 @@ import           Path                            (Dir, File, Rel)
 import qualified Path                            as P
 import qualified Path.IO                         as P
 import qualified Paths_line_bot_kiirotori        as PR
-import           System.IO                       (hFlush, stdout)
+import           System.IO                       (BufferMode (..),
+                                                  hSetBuffering, stdout)
 import           Text.Printf                     (printf)
 import           Text.Toml                       (parseTomlDoc)
 
@@ -128,6 +131,7 @@ putBootMessage = do
 
 main :: IO ()
 main = do
+    hSetBuffering stdout LineBuffering
     opts <- parseOptions
     cfg <- OA.putDoc (logo <> OA.hardline)
         >> putBootMessage
@@ -135,4 +139,3 @@ main = do
     void $ concurrently
         (uncurry watchSchedule ((optQuietLog &&& optCronPath) opts) cfg)
         (mainServer (optQuietLog opts) cfg)
-

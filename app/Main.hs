@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveAnyClass, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
 import           Control.Arrow                   ((&&&), (|||))

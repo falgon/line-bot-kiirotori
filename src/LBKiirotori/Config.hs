@@ -190,6 +190,6 @@ readConfigWithLog :: (MonadIO m, MonadThrow m)
     => Bool
     -> P.SomeBase P.File
     -> m LBKiirotoriConfig
-readConfigWithLog isQuiet fp = unless isQuiet (liftIO $ putStr "reading config file..." *> hFlush stdout)
+readConfigWithLog isQuiet fp = unless isQuiet (liftIO $ putStr "reading config file ... " *> hFlush stdout)
     *> readConfig fp
     <* unless isQuiet (liftIO $ OA.putDoc (OA.dullgreen $ OA.text "done" <> OA.hardline))

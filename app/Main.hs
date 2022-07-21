@@ -139,4 +139,3 @@ main = do
     void $ concurrently
         (uncurry watchSchedule ((optQuietLog &&& optCronPath) opts) cfg)
         (mainServer (optQuietLog opts) cfg)
-

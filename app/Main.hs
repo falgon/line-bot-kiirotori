@@ -1,4 +1,6 @@
-{-# LANGUAGE DeriveAnyClass, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE DeriveAnyClass    #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module Main where
 
 import           Control.Arrow                   ((&&&), (|||))
@@ -137,4 +139,3 @@ main = do
     void $ concurrently
         (uncurry watchSchedule ((optQuietLog &&& optCronPath) opts) cfg)
         (mainServer (optQuietLog opts) cfg)
-

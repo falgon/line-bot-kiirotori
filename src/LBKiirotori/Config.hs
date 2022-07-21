@@ -1,4 +1,6 @@
-{-# LANGUAGE CPP, DerivingStrategies, OverloadedStrings #-}
+{-# LANGUAGE CPP                #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE OverloadedStrings  #-}
 module LBKiirotori.Config (
     LBKiirotoriConfig (..)
   , LBKiirotoriAppConfig (..)
@@ -100,7 +102,7 @@ lookupTable :: MonadThrow m
     -> m Table
 lookupTable key tb = case HM.lookup key tb of
     Just (VTable tb) -> pure tb
-    _ -> throwString $ "expected table [" <> T.unpack key <> "]"
+    _                -> throwString $ "expected table [" <> T.unpack key <> "]"
 
 lookupString :: (IsString s, MonadThrow m)
     => T.Text

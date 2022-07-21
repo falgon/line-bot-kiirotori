@@ -31,9 +31,9 @@ import           System.FSNotify                 (Event (..), eventPath,
 import           System.IO                       (hFlush, stdout)
 import           Text.Printf                     (printf)
 
+import           LBKiirotori.API.PushMessage     (PushMessage (..), pushMessage)
 import           LBKiirotori.AccessToken         (getAccessToken)
 import           LBKiirotori.AccessToken.Class
-import           LBKiirotori.API.PushMessage     (PushMessage (..), pushMessage)
 import           LBKiirotori.Config              (LBKiirotoriAppConfig (..),
                                                   LBKiirotoriConfig (..))
 import           LBKiirotori.Data.MessageObject  (MessageBody (..), textMessage)

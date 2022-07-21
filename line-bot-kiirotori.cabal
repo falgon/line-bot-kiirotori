@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4391603612549634fd42a587ad936cf4794812c7f2a469c7afcfc22e398970c6
+-- hash: e9475bdbd655eb07831a88767444bd99787f5dfb80ee389d133b372f5adf557b
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -108,6 +108,7 @@ library
     , optparse-applicative
     , path
     , path-io
+    , retry
     , safe-exceptions
     , scientific
     , servant
@@ -161,6 +162,7 @@ executable line-bot-kiirotori
     , optparse-applicative
     , path
     , path-io
+    , retry
     , safe-exceptions
     , scientific
     , servant
@@ -216,6 +218,7 @@ test-suite line-bot-kiirotori-test
     , optparse-applicative
     , path
     , path-io
+    , retry
     , safe-exceptions
     , scientific
     , servant

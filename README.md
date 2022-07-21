@@ -48,6 +48,7 @@ failed_auth = ""
 already_auth = "the channel name %s is authorized at %s"
 unknown_cmd_message = "🤔"
 port = 48080 # port number
+retry_max = 3 # retry max when sending push message fails
 
 [mysql]
 hostname = "" # host name, e.g. "127.0.0.2"

@@ -18,6 +18,7 @@ import           Data.Functor               (($>), (<&>))
 import           Data.Functor.Identity      (Identity)
 import           Data.List                  (isPrefixOf)
 import qualified Data.Map                   as Map
+import           Data.Char                  (isSpace)
 import           Data.Maybe                 (catMaybes)
 import qualified Data.Text                  as T
 import           Data.Void                  (Void)
@@ -117,7 +118,7 @@ schedulableAppArg = M.sepBy (withVar (quoted M.<|> nonQuoted)) separator
         singleQuoted = T.pack <$> (MC.char '\'' *> M.someTill MCL.charLiteral (MC.char '\''))
         doubleQuoted = T.pack <$> (MC.char '"' *> M.someTill MCL.charLiteral (MC.char '"'))
         quoted = lexeme (singleQuoted M.<|> doubleQuoted)
-        nonQuoted = T.pack <$> M.some MC.alphaNumChar
+        nonQuoted = T.pack <$> M.some (M.satisfy (not . isSpace))
 
 schedulableAppArgWithVar :: EntryParser [T.Text]
 schedulableAppArgWithVar = M.option [] (lexeme separator *> schedulableAppArg)

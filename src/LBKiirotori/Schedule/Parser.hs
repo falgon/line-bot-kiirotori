@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.Schedule.Parser (
     SchedulableAppCmd (..)
   , SchedulableApp (..)

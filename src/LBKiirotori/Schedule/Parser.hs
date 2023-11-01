@@ -14,11 +14,11 @@ import           Control.Monad              (forM, void, (>=>))
 import           Control.Monad.Trans        (lift)
 import           Control.Monad.Trans.Reader (Reader (..), asks, runReader)
 import           Control.Monad.Trans.State  (StateT, evalStateT, gets, modify)
+import           Data.Char                  (isSpace)
 import           Data.Functor               (($>), (<&>))
 import           Data.Functor.Identity      (Identity)
 import           Data.List                  (isPrefixOf)
 import qualified Data.Map                   as Map
-import           Data.Char                  (isSpace)
 import           Data.Maybe                 (catMaybes)
 import qualified Data.Text                  as T
 import           Data.Void                  (Void)

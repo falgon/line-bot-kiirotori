@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e9475bdbd655eb07831a88767444bd99787f5dfb80ee389d133b372f5adf557b
+-- hash: 76b72ddfe97faaffd225c325696ce7a59bc043f7c718a9f3548771ff41d8b5bb
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -121,9 +121,9 @@ library
     , vector
     , warp
     , warp-tls
+  default-language: Haskell2010
   if (flag(release))
     cpp-options: -DRELEASE
-  default-language: Haskell2010
 
 executable line-bot-kiirotori
   main-is: Main.hs

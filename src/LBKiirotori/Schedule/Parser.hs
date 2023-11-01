@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.Schedule.Parser (
     SchedulableAppCmd (..)
   , SchedulableApp (..)
@@ -14,6 +15,7 @@ import           Control.Monad              (forM, void, (>=>))
 import           Control.Monad.Trans        (lift)
 import           Control.Monad.Trans.Reader (Reader (..), asks, runReader)
 import           Control.Monad.Trans.State  (StateT, evalStateT, gets, modify)
+import           Data.Char                  (isSpace)
 import           Data.Functor               (($>), (<&>))
 import           Data.Functor.Identity      (Identity)
 import           Data.List                  (isPrefixOf)
@@ -117,7 +119,7 @@ schedulableAppArg = M.sepBy (withVar (quoted M.<|> nonQuoted)) separator
         singleQuoted = T.pack <$> (MC.char '\'' *> M.someTill MCL.charLiteral (MC.char '\''))
         doubleQuoted = T.pack <$> (MC.char '"' *> M.someTill MCL.charLiteral (MC.char '"'))
         quoted = lexeme (singleQuoted M.<|> doubleQuoted)
-        nonQuoted = T.pack <$> M.some MC.alphaNumChar
+        nonQuoted = T.pack <$> M.some (M.satisfy (not . isSpace))
 
 schedulableAppArgWithVar :: EntryParser [T.Text]
 schedulableAppArgWithVar = M.option [] (lexeme separator *> schedulableAppArg)

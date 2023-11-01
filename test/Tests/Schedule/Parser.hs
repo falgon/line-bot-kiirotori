@@ -225,4 +225,155 @@ tests = TestLabel "parseSchedule" $ TestList [
                       }
                   }
               ]
+  , TestLabel "push-text-message 9" $
+        fromRight [] (parseSchedule (T.unlines [
+            "0 * 3 * * " <> roomId <> " push-text-message abc def"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          , "0 * 3 * * " <> roomId <> " push-text-message abc def ghi"
+          ])) ~?= [
+                ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "abc", "def", "ghi" ]
+                          }
+                      }
+                  }
+              ]
+  , TestLabel "push-text-message 10" $
+        fromRight [] (parseSchedule (T.unlines [
+            "0 * 3 * * " <> roomId <> " push-text-message 'あいうえお🔥🗑️🔥🗑️'"
+          , "0 * 3 * * " <> roomId <> " push-text-message あいうえお🔥🗑️🔥🗑️"
+          ])) ~?= [
+               ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "あいうえお🔥🗑️🔥🗑️" ]
+                          }
+                      }
+                  }
+             , ScheduleEntry {
+                    seSchedule = cronSchedule "0 * 3 * *"
+                  , seTargetSchedule = TargetSchedule {
+                        saTargetId = roomId
+                      , saApp = SchedulableApp {
+                            saCmd = PushTextMessage
+                          , saArg = [ "あいうえお🔥🗑️🔥🗑️" ]
+                          }
+                      }
+                  }
+              ]
   ]

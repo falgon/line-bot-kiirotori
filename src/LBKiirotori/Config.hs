@@ -13,7 +13,6 @@ import           Control.Exception.Safe          (MonadThrow (..), throwString)
 import           Control.Monad                   (liftM4, unless)
 import           Control.Monad.IO.Class          (MonadIO (..))
 import           Control.Monad.Logger            (LoggingT)
-import           Control.Monad.Reader            (ReaderT, asks)
 import qualified Data.ByteString                 as B
 import           Data.Functor                    ((<&>))
 import qualified Data.HashMap.Lazy               as HM

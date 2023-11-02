@@ -18,18 +18,20 @@ import           LBKiirotori.API.ReplyMessage
 import           LBKiirotori.Data.MessageObject                  (MessageBody (..),
                                                                   textMessage)
 import           LBKiirotori.Internal.Utils                      (fromMaybeM)
-import           LBKiirotori.Webhook.EventHandlers.Message.Event (MessageEvent, MessageEventData (..))
+import           LBKiirotori.Webhook.EventHandlers.Message.Event (MessageEvent,
+                                                                  MessageEventData (..),
+                                                                  getLineEventSrc)
 import           LBKiirotori.Webhook.EventObject.Core            (LineEventObject (..))
 import           LBKiirotori.Webhook.EventObject.EventSource     (LineEventSource (..),
                                                                   LineEventSourceType (..))
 
 srcId :: MessageEvent T.Text
 srcId = do
-    src <- lift $ gets $ lineEventSource . medLEO
-    case lineEventSrcType src of
-        LineEventSourceTypeUser  -> idRecord "user" lineEventSrcUserId src
-        LineEventSourceTypeGroup -> idRecord "group" lineEventSrcGroupId src
-        LineEventSourceTypeRoom  -> idRecord "room" lineEventSrcRoomId src
+    x <- getLineEventSrc
+    case lineEventSrcType x of
+        LineEventSourceTypeUser  -> idRecord "user" lineEventSrcUserId x
+        LineEventSourceTypeGroup -> idRecord "group" lineEventSrcGroupId x
+        LineEventSourceTypeRoom  -> idRecord "room" lineEventSrcRoomId x
         where
             idRecord s f src = fromMaybeM
                 (lift $ lift $ throwString $ mconcat [ "need to be able to get the id of ", s ])

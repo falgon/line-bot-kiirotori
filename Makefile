@@ -18,11 +18,13 @@ restyle:
 restyle-with-hlint: restyle
 	hlint ./app ./src
 
-install:
+install-bin:
 	@stack install \
 		--flag line-bot-kiirotori:release \
 		--ghc-options -O2
 	@sudo mv $(HOME)/.local/bin/$(BIN_NAME) $(INSTALL_PATH)
+
+install: install-bin
 	@sudo mkdir -p $(EXECUTOR_CONF_DIR) && sudo cp -rv ./docker $(EXECUTOR_CONF_DIR)
 	@sudo cp -v .$(NGINX_SITES_AVAILABLE_PATH)/$(CONF_NAME) $(NGINX_SITES_AVAILABLE_PATH)
 	@sudo cp -v ./etc/systemd/$(SYSTEMD_SERVICE_NAME) /etc/systemd/system
@@ -37,4 +39,4 @@ uninstall:
 		/etc/systemd/system/$(SYSTEMD_SERVICE_NAME)
 	@sudo bash -c 'pushd $(EXECUTOR_CONF_DIR)/docker && docker-compose down && popd'
 
-.PHONY: release debug restyle restyle-with-hlint install uninstall
+.PHONY: release debug restyle restyle-with-hlint install-bin install uninstall

@@ -5,6 +5,7 @@ module LBKiirotori.Database.Redis (
   , hmget'
   , hmset'
   , writeToken
+  , writeMyselfId
   , takeToken
   , takeValidToken
   , AccessToken (..)
@@ -48,6 +49,7 @@ import           LBKiirotori.AccessToken.Core   (LineIssueChannelResp (..))
 import           LBKiirotori.Internal.Utils     (doubleToUTCTime, hoistMaybe,
                                                  localTimeToCurrentUTCTimeZone,
                                                  utcToCurrentLocalTimeZone)
+import LBKiirotori.API.Profile.Myself (ProfileMyselfResp (..))
 
 newConn :: MonadIO m => ConnectInfo -> m Connection
 newConn = liftIO . checkedConnect
@@ -74,6 +76,14 @@ writeToken currentTime reqResp = redis $
     where
         expiredTime = addUTCTime (fromIntegral $ expiresIn reqResp) currentTime
         val = realToFrac $ utcTimeToPOSIXSeconds expiredTime
+
+writeMyselfId :: AccessTokenMonad m
+    => ProfileMyselfResp
+    -> m T.Text
+writeMyselfId reqResp = let userId = pmUserId reqResp in redis $ do
+    liftIO $ putStrLn "Writing my id" 
+    set "myUserId" userId
+    pure userId
 
 eitherFail :: (MonadFail m, Show a) => Either a b -> m b
 eitherFail = fail . show ||| pure
@@ -135,3 +145,4 @@ getAuthCode = redis (get pinCodeKey >>= eitherFail)
     >>= maybe (throwString "cannot get PINCODE") (pure . fromString . BS.toString)
     where
         pinCodeKey = "PINCODE"
+

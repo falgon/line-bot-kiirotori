@@ -55,4 +55,3 @@ instance ToJSON LineEventObject where
       , ("replyToken",) . String <$> lineEventReplyToken v
       , ("message",) . toJSON <$> lineEventMessage v
       ]
-

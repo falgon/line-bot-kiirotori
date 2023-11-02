@@ -104,7 +104,7 @@ writeKVSAuthInfo lt name = do
                 . utcTimeToPOSIXSeconds)
         >>= \case
             Ok -> pure ()
-            _ -> throwString "unexpected to return status, expected Ok"
+            _  -> throwString "unexpected to return status, expected Ok"
 
 data DataSrc = FromRDB LocalTime T.Text
     | FromKVS LocalTime T.Text
@@ -149,7 +149,7 @@ checkAuthed = runMaybeT $
         >>= hoistMaybe
         >>= \case
             r@(FromRDB lt name) -> r <$ lift (writeKVSAuthInfo lt name)
-            x -> pure x
+            x                   -> pure x
 
 getDisplayName :: MessageEvent T.Text
 getDisplayName = getLineEventSrc <&> lineEventSrcType >>= \case

@@ -1,5 +1,8 @@
-{-# LANGUAGE DataKinds, LambdaCase, OverloadedStrings, TemplateHaskell,
-             TupleSections #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
 module LBKiirotori.Webhook.EventHandlers.Message.Commands.Auth (
     checkAuthed
   , authCmd
@@ -62,7 +65,9 @@ import           LBKiirotori.Internal.Utils                       (doubleToUTCTi
                                                                    localTimeToCurrentUTCTimeZone,
                                                                    tshow,
                                                                    utcToCurrentLocalTimeZone)
-import           LBKiirotori.Webhook.EventHandlers.Message.Event  (MessageEvent, MessageEventData (..))
+import           LBKiirotori.Webhook.EventHandlers.Message.Event  (MessageEvent,
+                                                                   MessageEventData (..),
+                                                                   getLineEventSrc)
 import           LBKiirotori.Webhook.EventHandlers.Message.Parser (lexeme)
 import           LBKiirotori.Webhook.EventHandlers.Message.Utils  (replyOneText,
                                                                    srcId)
@@ -77,12 +82,8 @@ import           LBKiirotori.Webhook.EventObject.LineBotHandler   (LineBotHandle
                                                                    runSQL)
 
 srcTypeVal :: Integral i => MessageEvent i
-srcTypeVal = lift $ gets $
-    fromIntegral
-  . fromEnum
-  . lineEventSrcType
-  . lineEventSource
-  . medLEO
+srcTypeVal = getLineEventSrc
+    <&> fromIntegral . fromEnum . lineEventSrcType
 
 kVSEncodedKey :: MessageEvent BS.ByteString
 kVSEncodedKey = (\v i -> fromString (show v) <> ":" <> T.encodeUtf8 i)
@@ -151,7 +152,7 @@ checkAuthed = runMaybeT $
             x -> pure x
 
 getDisplayName :: MessageEvent T.Text
-getDisplayName = lift (gets $ lineEventSrcType . lineEventSource . medLEO) >>= \case
+getDisplayName = getLineEventSrc <&> lineEventSrcType >>= \case
     LineEventSourceTypeUser     -> pfuDisplayName <$> pass profileFriendUser
     LineEventSourceTypeGroup    -> gsGroupName <$> pass groupSummary
     LineEventSourceTypeRoom     -> (<> "people room") . tshow . cmCount <$> pass countRoom

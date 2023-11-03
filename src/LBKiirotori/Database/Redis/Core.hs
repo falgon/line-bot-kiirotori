@@ -1,5 +1,7 @@
-{-# LANGUAGE DataKinds, FlexibleContexts, OverloadedStrings,
-             ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module LBKiirotori.Database.Redis.Core (
     newConn
   , hmget'

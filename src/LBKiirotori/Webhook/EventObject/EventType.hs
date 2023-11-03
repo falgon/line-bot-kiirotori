@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 module LBKiirotori.Webhook.EventObject.EventType (
     LineEventType (..)
+  , ExtEventType (..)
 ) where
 
 import           Data.Aeson                 (FromJSON (..), ToJSON (..),
@@ -47,3 +48,13 @@ instance FromJSON LineEventType where
 instance ToJSON LineEventType where
     toJSON = genericToJSON $ stripFirstToLowerLabeledOption 13
 
+data ExtEventType = ExtEventTypeSendPlain
+    deriving (Eq, Show, Generic)
+
+instance FromJSON ExtEventType where
+    parseJSON (String "sendPlain") = pure ExtEventTypeSendPlain
+    parseJSON invalid = prependFailure "parsing ExtEventType failed, "
+        $ typeMismatch "String" invalid
+
+instance ToJSON ExtEventType where
+    toJSON = genericToJSON $ stripFirstToLowerLabeledOption 12

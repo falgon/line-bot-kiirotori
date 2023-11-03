@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c661a34e1c322a6ba38f2eab939e0e598d5972dd2fb28be61b72c696c2c4be51
+-- hash: 7c897f670c88bf5e59bdb4b008be24fcad34f10fc3949c6a249ebe3331b375de
 
 name:           line-bot-kiirotori
 version:        0.1.0.0
@@ -38,17 +38,20 @@ library
       LBKiirotori.AccessToken.JWT
       LBKiirotori.API.Count.Room
       LBKiirotori.API.MessageErrorResp
+      LBKiirotori.API.Profile.Bot
       LBKiirotori.API.Profile.FriendUser
       LBKiirotori.API.Profile.GroupMember
-      LBKiirotori.API.Profile.Myself
       LBKiirotori.API.Profile.RoomMember
       LBKiirotori.API.PushMessage
       LBKiirotori.API.ReplyMessage
       LBKiirotori.API.Summary.Group
+      LBKiirotori.BotProfile
       LBKiirotori.Config
       LBKiirotori.Data.MessageObject
       LBKiirotori.Database.MySQL
       LBKiirotori.Database.Redis
+      LBKiirotori.Database.Redis.Core
+      LBKiirotori.Database.Redis.Keys
       LBKiirotori.Internal.Exceptions
       LBKiirotori.Internal.HTTP
       LBKiirotori.Internal.Utils

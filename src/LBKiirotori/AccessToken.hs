@@ -20,7 +20,7 @@ import           LBKiirotori.Internal.Utils
 getAccessToken :: (MonadIO m, MonadThrow m, MonadParallel m, AccessTokenMonad m)
     => m AccessToken
 getAccessToken = takeValidToken
-    >>= maybe (bindM2 writeToken (liftIO getCurrentTime) reqAccessToken) pure
+    >>= fromMaybeM (bindM2 writeToken (liftIO getCurrentTime) reqAccessToken)
 
 getValidAccessTokenKIds :: (MonadIO m, MonadThrow m, MonadParallel m, AccessTokenMonad m)
     => m [T.Text]

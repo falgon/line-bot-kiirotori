@@ -1,8 +1,5 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds, MultiParamTypeClasses, OverloadedStrings,
+             TemplateHaskell, TypeOperators #-}
 module LBKiirotori.Webhook.Core (
     mainServer
 ) where
@@ -57,6 +54,7 @@ import           Servant.Server                                 (Application,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
 
+import           LBKiirotori.BotProfile                         (getBotUserId)
 import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
                                                                  LBKiirotoriConfig (..),
                                                                  readConfigWithLog)
@@ -122,10 +120,10 @@ eventHandler e
 
 mainHandler' :: LineWebhookRequestBody
     -> LineBotHandler T.Text
-mainHandler' (LineWebhookRequestBody dst events) = ifM ((/=) <$> pure dst <*> getBotId) unexpectedId $
+mainHandler' (LineWebhookRequestBody dst events) = ifM ((/=) <$> pure dst <*> getBotUserId) unexpectedId $
     MP.mapM_ eventHandler events $> mempty
     where
-        unexpectedId = $(logError) ("unexpected bot user id " <>dst)
+        unexpectedId = $(logError) ("unexpected bot user id " <> dst)
             >> throwError (err400 { errBody = "unexpected destination" })
 
 mainHandler :: Maybe LineSignature

@@ -1,5 +1,8 @@
-{-# LANGUAGE DataKinds, MultiParamTypeClasses, OverloadedStrings,
-             TemplateHaskell, TypeOperators #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeOperators         #-}
 module LBKiirotori.Webhook.Core (
     mainServer
 ) where
@@ -8,6 +11,7 @@ import           Control.Arrow                                  ((&&&), (|||))
 import           Control.Exception.Safe                         (MonadThrow)
 import           Control.Monad                                  (forM_, unless)
 import           Control.Monad.Except                           (MonadError (..))
+import           Control.Monad.Extra                            (ifM)
 import           Control.Monad.IO.Class                         (MonadIO (..))
 import           Control.Monad.Logger                           (LoggingT (..),
                                                                  logError,
@@ -54,6 +58,7 @@ import           Servant.Server                                 (Application,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
 
+import           LBKiirotori.BotProfile                         (getBotUserId)
 import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
                                                                  LBKiirotoriConfig (..),
                                                                  readConfigWithLog)
@@ -136,13 +141,16 @@ type API = LINEBotAPI -- :<|> LINEExtBotAPI
 
 lineBotMainHandler' :: LineWebhookRequestBody
     -> LineBotHandler T.Text
-lineBotMainHandler' (LineWebhookRequestBody _ events) = MP.mapM_ eventHandler events $> mempty
+lineBotMainHandler' (LineWebhookRequestBody dst events) = ifM ((/=) <$> pure dst <*> getBotUserId) unexpectedId $
+    MP.mapM_ eventHandler events $> mempty
     where
+        unexpectedId = $(logError) ("unexpected bot user id " <> dst)
+            >> throwError (err400 { errBody = "unexpected destination" })
         eventHandler e
             | lineEventType e == LineEventTypeJoin = joinEvent e
             | lineEventType e == LineEventTypeMessage = messageEvent e
             | otherwise = $(logInfo) (tshow e)
-        
+
 lineBotMainHandler :: Maybe LineSignature
     -> B.ByteString
     -> LineBotHandler T.Text

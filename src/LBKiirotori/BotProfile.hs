@@ -17,4 +17,3 @@ getBotUserId :: (MonadIO m, MonadThrow m, MonadParallel m, AccessTokenMonad m)
     => m T.Text
 getBotUserId = takeBotUserId
     >>= fromMaybeM (getAccessToken >>= reqProfileBot >>= writeBotUserId)
-

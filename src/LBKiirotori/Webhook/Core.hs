@@ -156,7 +156,7 @@ lineBotMainHandler :: Maybe LineSignature
     -> LineBotHandler T.Text
 lineBotMainHandler Nothing body = $(logError) (T.decodeUtf8 body)
     >> throwError (err400 { errBody = "invalid request" })
-mainHandler (Just sig) body = do
+lineBotMainHandler (Just sig) body = do
     sig' <- Base64.encode . flip hmac body <$> askLineChanSecret
     if sig' == T.encodeUtf8 sig then
         (unexpectedDecode ||| pure) (eitherDecode' $ BL.fromStrict body)

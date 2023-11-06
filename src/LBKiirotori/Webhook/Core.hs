@@ -1,6 +1,10 @@
-{-# LANGUAGE DataKinds, MultiParamTypeClasses, OverloadedStrings,
-             ScopedTypeVariables, TemplateHaskell, TypeApplications,
-             TypeOperators #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeOperators         #-}
 module LBKiirotori.Webhook.Core (
     mainServer
 ) where

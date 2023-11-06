@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 module LBKiirotori.Webhook.EventObject.Core (
     LineEventType (..)
   , LineEventObject (..)

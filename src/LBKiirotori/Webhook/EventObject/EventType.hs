@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric     #-}
+{-# LANGUAGE OverloadedStrings #-}
 module LBKiirotori.Webhook.EventObject.EventType (
     LineEventType (..)
   , ExtEventType (..)

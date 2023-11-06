@@ -68,7 +68,8 @@ data ExtEventObject = ExtEventObject {
   , extEventSource     :: T.Text -- Information about hitting api
   , extWebhookEventId  :: T.Text -- ID to uniquely identify the webhook event. String in ULID format
   , extDeliveryContext :: ExtDeliveryContext -- Whether the webhook event was resent
-  , extEventMessage    :: Maybe T.Text -- TODO: Currently, the eventtype only has the function of sending plaintext, so it is just a text type.
+  , extEventMessages   :: Maybe [T.Text] -- TODO: Currently, the eventtype only has the function of sending plaintext, so it is just a text type.
+  , extEventTarget     :: Maybe T.Text -- Valid for message sending events. ID of user/group/room.
   } deriving Show
 
 instance FromJSON ExtEventObject where
@@ -78,7 +79,8 @@ instance FromJSON ExtEventObject where
         <*> v .: "source"
         <*> v .: "webhookEventId"
         <*> v .: "deliveryContext"
-        <*> v .:? "message"
+        <*> v .:? "messages"
+        <*> v .:? "target"
     parseJSON invalid = prependFailure "parsing ExtEventObject failed, "
         $ typeMismatch "Object" invalid
 
@@ -89,5 +91,6 @@ instance ToJSON ExtEventObject where
       , Just ("source", String $ extEventSource v)
       , Just ("webhookEventId", String $ extWebhookEventId v)
       , Just ("deliveryContext", toJSON $ extDeliveryContext v)
-      , ("message",) . String <$> extEventMessage v
+      , ("messages",) . toJSON <$> extEventMessages v
+      , ("target",) . String <$> extEventTarget v
       ]

@@ -18,6 +18,7 @@ import           Control.Monad.Logger                           (LoggingT (..),
 import           Control.Monad.Parallel                         as MP
 import           Control.Monad.Reader                           (ReaderT (..),
                                                                  asks)
+import           Control.Monad.Trans.Maybe                      (MaybeT (..))
 import           Crypto.Hash.SHA256                             (hmac)
 import           Data.Aeson
 import           Data.Aeson.Types
@@ -27,6 +28,7 @@ import qualified Data.ByteString.Lazy                           as BL
 import           Data.Functor                                   (($>))
 import qualified Data.HashMap.Strict                            as HM
 import qualified Data.List.NonEmpty                             as NE
+import           Data.Maybe                                     (fromMaybe)
 import           Data.String                                    (IsString (..))
 import qualified Data.Text                                      as T
 import qualified Data.Text.Encoding                             as T
@@ -48,13 +50,18 @@ import           Servant.Server                                 (Application,
                                                                  serve)
 import           Servant.Server.Internal.ServerError
 
+import           LBKiirotori.AccessToken                        (getAccessToken)
+import           LBKiirotori.API.PushMessage
 import           LBKiirotori.BotProfile                         (getBotUserId)
 import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
                                                                  LBKiirotoriConfig (..),
                                                                  readConfigWithLog)
+import           LBKiirotori.Data.MessageObject                 (MessageBody (..),
+                                                                 textMessage)
 import qualified LBKiirotori.Database.MySQL                     as MySQL
 import qualified LBKiirotori.Database.Redis                     as Redis
-import           LBKiirotori.Internal.Utils                     (tshow)
+import           LBKiirotori.Internal.Utils                     (hoistMaybe,
+                                                                 tshow)
 import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
@@ -67,9 +74,20 @@ instance EventHandler LineEventObject where
 
 instance EventHandler ExtEventObject where
     handle x
-        | extEventType x == ExtEventTypeSendPlain = $(logInfo) ("unexpected bot user id " <> tshow x) -- TODO
-            >> throwError (err400 { errBody = "invalid requests" })
-        | otherwise = $(logInfo) (tshow x) -- TODO
+        | extEventType x == ExtEventTypeSendPlain = do
+            $(logInfo) ("sendPlain instruction is comming from " <> extEventSource x)
+            case (extEventTarget x, extEventMessages x) of
+                (Just target, Just messages) ->
+                    bindM2 pushMessage getAccessToken $ pure $ messageObject target messages
+                _ -> unexpectedUndefined
+        | otherwise = $(logError) ("invalid requests: " <> tshow x) -- TODO
+        where
+            unexpectedUndefined = $(logError)
+                ("sendPlain requested but target or message is not defined: " <> tshow x)
+            messageObject target messages = PushMessage {
+                pmTo = target
+              , pmMessages = map (\x -> MBText $ textMessage x Nothing Nothing) messages
+              }
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
 data RequestBody e = RequestBody {

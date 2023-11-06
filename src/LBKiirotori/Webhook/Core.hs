@@ -1,8 +1,6 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE DataKinds, MultiParamTypeClasses, OverloadedStrings,
+             ScopedTypeVariables, TemplateHaskell, TypeApplications,
+             TypeOperators #-}
 module LBKiirotori.Webhook.Core (
     mainServer
 ) where
@@ -41,15 +39,7 @@ import           Network.Wai.Handler.Warp                       (Port, Settings,
                                                                  setPort)
 import qualified Options.Applicative.Help.Pretty                as OA
 import qualified Path                                           as P
-import           Servant                                        (Header, JSON,
-                                                                 MimeRender (..),
-                                                                 MimeUnrender (..),
-                                                                 PlainText,
-                                                                 Post,
-                                                                 Proxy (..),
-                                                                 ReqBody,
-                                                                 type (:>),
-                                                                 type (:<|>))
+import           Servant
 import           Servant.API.ContentTypes                       (Accept (..))
 import           Servant.Server                                 (Application,
                                                                  Handler (..),
@@ -69,39 +59,33 @@ import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
-type LineSignature = T.Text
+instance EventHandler LineEventObject where
+    handle x
+        | lineEventType x == LineEventTypeJoin = joinEvent x
+        | lineEventType x == LineEventTypeMessage = messageEvent x
+        | otherwise = $(logInfo) (tshow x)
+
+instance EventHandler ExtEventObject where
+    handle x
+        | extEventType x == ExtEventTypeSendPlain = $(logInfo) ("unexpected bot user id " <> tshow x) -- TODO
+            >> throwError (err400 { errBody = "invalid requests" })
+        | otherwise = $(logInfo) (tshow x) -- TODO
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
-data LineWebhookRequestBody = LineWebhookRequestBody {
-    lineWHRBDst    :: T.Text
-  , lineWHRBEvents :: [LineEventObject]
+data RequestBody e = RequestBody {
+    rbDst    :: T.Text
+  , rbEvents :: [e]
   } deriving Show
 
-instance FromJSON LineWebhookRequestBody where
-    parseJSON (Object v) = LineWebhookRequestBody
+instance FromJSON e => FromJSON (RequestBody e) where
+    parseJSON (Object v) = RequestBody
         <$> v .: "destination"
         <*> v .: "events"
 
-instance ToJSON LineWebhookRequestBody where
+instance ToJSON e => ToJSON (RequestBody e) where
     toJSON v = Object $ HM.fromList [
-        ("destination", String $ lineWHRBDst v)
-      , ("events", toJSON $ lineWHRBEvents v)
-      ]
-
-data ExtWebhookRequestBody = ExtWebhookRequestBody {
-    extWHRDst :: T.Text
-  , extWHREvents :: [ExtEventObject]
-  } deriving Show
-
-instance FromJSON ExtWebhookRequestBody where
-    parseJSON (Object v) = ExtWebhookRequestBody
-        <$> v .: "destination"
-        <*> v .: "events"
-
-instance ToJSON ExtWebhookRequestBody where
-    toJSON v = Object $ HM.fromList [
-        ("destination", String $ extWHRDst v)
-      , ("events", toJSON $ extWHREvents v)
+        ("destination", String $ rbDst v)
+      , ("events", toJSON $ rbEvents v)
       ]
 
 -- Holds the raw string once because it requires hmac encoding
@@ -127,85 +111,84 @@ instance MimeUnrender WebhookJSON B.ByteString where
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-headers
 type LINEBotAPI = "linebot"
     :> "webhook"
-    :> Header "x-line-signature" LineSignature
+    :> Header "x-line-signature" T.Text
     :> ReqBody '[WebhookJSON] B.ByteString
     :> Post '[PlainText] T.Text
 
 type LINEExtBotAPI = "linebot"
     :> "ext-webhook"
-    :> Header "x-ext-line-signature" LineSignature
+    :> Header "x-ext-line-signature" T.Text
     :> ReqBody '[WebhookJSON] B.ByteString
     :> Post '[PlainText] T.Text
 
-type API = LINEBotAPI -- :<|> LINEExtBotAPI
-
-lineBotMainHandler' :: LineWebhookRequestBody
-    -> LineBotHandler T.Text
-lineBotMainHandler' (LineWebhookRequestBody dst events) = ifM ((/=) <$> pure dst <*> getBotUserId) unexpectedId $
-    MP.mapM_ eventHandler events $> mempty
-    where
-        unexpectedId = $(logError) ("unexpected bot user id " <> dst)
-            >> throwError (err400 { errBody = "unexpected destination" })
-        eventHandler e
-            | lineEventType e == LineEventTypeJoin = joinEvent e
-            | lineEventType e == LineEventTypeMessage = messageEvent e
-            | otherwise = $(logInfo) (tshow e)
-
-lineBotMainHandler :: Maybe LineSignature
+handleBot :: forall e. (FromJSON e, EventHandler e)
+    => Proxy e
+    -> Maybe T.Text
     -> B.ByteString
     -> LineBotHandler T.Text
-lineBotMainHandler Nothing body = $(logError) (T.decodeUtf8 body)
+handleBot proxy Nothing body = $(logError) (T.decodeUtf8 body)
     >> throwError (err400 { errBody = "invalid request" })
-lineBotMainHandler (Just sig) body = do
+handleBot proxy (Just sig) body = do
     sig' <- Base64.encode . flip hmac body <$> askLineChanSecret
-    if sig' == T.encodeUtf8 sig then
-        (unexpectedDecode ||| pure) (eitherDecode' $ BL.fromStrict body)
-            >>= lineBotMainHandler'
-    else unexpectedSig sig'
+    if sig' /= T.encodeUtf8 sig then unexpectedSig sig' else do
+        reqBody <- (unexpectedDecode ||| pure) (eitherDecode' (BL.fromStrict body) :: Either String (RequestBody e))
+        ifM ((/=) <$> pure (rbDst reqBody) <*> getBotUserId) (unexpectedId reqBody) $
+            MP.mapM_ handle (rbEvents reqBody) $> mempty
     where
-        unexpectedDecode :: String -> LineBotHandler a
-        unexpectedDecode s = $(logError) (tshow body)
-            >> $(logError) (T.pack s)
-            >> throwError (err400 { errBody = "invalid json data" })
-
         unexpectedSig :: B.ByteString -> LineBotHandler a
         unexpectedSig sig' = $(logError) (tshow body)
             >> $(logError) ("lhs: " <> T.decodeUtf8 sig' <> ", rhs: " <> sig)
             >> throwError (err400 { errBody = "invalid signature" })
 
-{-
-sendPlain = undefined
+        unexpectedDecode :: String -> LineBotHandler a
+        unexpectedDecode s = $(logError) (tshow body)
+            >> $(logError) (T.pack s)
+            >> throwError (err400 { errBody = "invalid json data" })
 
-extBotMainHandler' :: ExtWebhookRequestBody
+        unexpectedId :: RequestBody e -> LineBotHandler a
+        unexpectedId reqBody = $(logError) ("unexpected bot user id " <> rbDst reqBody)
+            >> throwError (err400 { errBody = "unexpected destination" })
+
+handleLineBot :: Maybe T.Text
+    -> B.ByteString
     -> LineBotHandler T.Text
-extBotMainHandler' (ExtWebhookRequestBody botUserId events) = flip (ifM ((==) <$> (pure botUserId) <*> askLineUserId)) (throwError (err400 { errBody = "unexpected destination" })) $
-    MP.mapM_ eventHandler events $> mempty
-        where
-            eventHandler e
-                | extEventType e == ExtEventTypeSendPlain = sendPlain e
-                | otherwise =
--}
+handleLineBot = handleBot (Proxy @ LineEventObject)
 
-api :: Proxy API
-api = Proxy
+handleExtBot :: Maybe T.Text
+    -> B.ByteString
+    -> LineBotHandler T.Text
+handleExtBot = handleBot (Proxy @ ExtEventObject)
 
-loggingServer :: (Maybe LineSignature -> B.ByteString -> LineBotHandler T.Text)
-    -> LBKiirotoriConfig
-    -> Maybe LineSignature
+type API = LINEBotAPI :<|> LINEExtBotAPI
+
+connectConfig :: LBKiirotoriConfig
+    -> Handler LineBotHandlerConfig
+connectConfig cfg = LineBotHandlerConfig
+    <$> MySQL.newConn (cfgMySQL cfg)
+    <*> Redis.newConn (cfgRedis cfg)
+    <*> pure cfg
+
+lineBotServer :: LBKiirotoriConfig
+    -> Maybe T.Text
     -> B.ByteString
     -> Handler T.Text
-loggingServer f cfg s b = do
-    cfg <- LineBotHandlerConfig
-        <$> MySQL.newConn (cfgMySQL cfg)
-        <*> Redis.newConn (cfgRedis cfg)
-        <*> pure cfg
-    hoistServer api (runStdoutLoggingT . flip runReaderT cfg) f s b
+lineBotServer cfg s b = do
+    cfg' <- connectConfig cfg
+    hoistServer (Proxy @ LINEBotAPI) (runStdoutLoggingT . flip runReaderT cfg') handleLineBot s b
+
+lineExtBotServer :: LBKiirotoriConfig
+    -> Maybe T.Text
+    -> B.ByteString
+    -> Handler T.Text
+lineExtBotServer cfg s b = do
+    cfg' <- connectConfig cfg
+    hoistServer (Proxy @ LINEExtBotAPI) (runStdoutLoggingT . flip runReaderT cfg') handleExtBot s b
 
 server :: LBKiirotoriConfig -> Server API
-server = loggingServer lineBotMainHandler -- mainHandler
+server cfg = lineBotServer cfg :<|> lineExtBotServer cfg
 
 kiirotoriApp :: LBKiirotoriConfig -> Application
-kiirotoriApp = serve api . server
+kiirotoriApp = serve (Proxy @ API) . server
 
 serverSettings :: Bool -> LBKiirotoriConfig -> Settings
 serverSettings qFlag cfg = setPort (cfgAppPort $ cfgApp cfg)

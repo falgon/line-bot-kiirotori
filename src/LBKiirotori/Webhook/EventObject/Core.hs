@@ -1,25 +1,30 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 module LBKiirotori.Webhook.EventObject.Core (
     LineEventType (..)
   , LineEventObject (..)
+  , ExtEventType (..)
   , ExtEventObject (..)
+  , EventHandler (..)
 ) where
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict                             as HM
-import           Data.Maybe                                      (catMaybes)
+import qualified Data.HashMap.Strict                                 as HM
+import           Data.Maybe                                          (catMaybes)
 import           Data.Scientific
-import qualified Data.Text                                       as T
-import           Data.Word                                       (Word32)
+import qualified Data.Text                                           as T
+import           Data.Word                                           (Word32)
 
-import           LBKiirotori.Internal.Utils                      (tshow)
+import           LBKiirotori.Internal.Utils                          (tshow)
 import           LBKiirotori.Webhook.EventObject.DeliveryContext
 import           LBKiirotori.Webhook.EventObject.EventMessage
 import           LBKiirotori.Webhook.EventObject.EventMode
 import           LBKiirotori.Webhook.EventObject.EventSource
 import           LBKiirotori.Webhook.EventObject.EventType
+import           LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler)
+
+class EventHandler a where
+    handle :: a -> LineBotHandler ()
 
 data LineEventObject = LineEventObject {
     lineEventType            :: LineEventType
@@ -58,12 +63,12 @@ instance ToJSON LineEventObject where
       ]
 
 data ExtEventObject = ExtEventObject {
-    extEventType :: ExtEventType -- event type, NOTE Currently there is only the ability to send plaintext
-  , extEventTimestamp :: Scientific -- timestamp
-  , extEventSource :: T.Text -- Information about hitting api
-  , extWebhookEventId :: T.Text -- ID to uniquely identify the webhook event. String in ULID format
+    extEventType       :: ExtEventType -- event type, NOTE Currently there is only the ability to send plaintext
+  , extEventTimestamp  :: Scientific -- timestamp
+  , extEventSource     :: T.Text -- Information about hitting api
+  , extWebhookEventId  :: T.Text -- ID to uniquely identify the webhook event. String in ULID format
   , extDeliveryContext :: ExtDeliveryContext -- Whether the webhook event was resent
-  , extEventMessage :: Maybe T.Text -- TODO: Currently, the eventtype only has the function of sending plaintext, so it is just a text type.
+  , extEventMessage    :: Maybe T.Text -- TODO: Currently, the eventtype only has the function of sending plaintext, so it is just a text type.
   } deriving Show
 
 instance FromJSON ExtEventObject where

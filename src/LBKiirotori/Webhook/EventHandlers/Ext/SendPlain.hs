@@ -1,4 +1,6 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module LBKiirotori.Webhook.EventHandlers.Ext.SendPlain (
     sendPlain
 ) where

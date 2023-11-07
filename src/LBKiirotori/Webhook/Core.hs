@@ -9,89 +9,69 @@ module LBKiirotori.Webhook.Core (
     mainServer
 ) where
 
-import           Control.Arrow                                  ((&&&), (|||))
-import           Control.Exception.Safe                         (MonadThrow)
-import           Control.Monad                                  (forM_, unless)
-import           Control.Monad.Except                           (MonadError (..))
-import           Control.Monad.Extra                            (ifM)
-import           Control.Monad.IO.Class                         (MonadIO (..))
-import           Control.Monad.Logger                           (LoggingT (..),
-                                                                 logError,
-                                                                 logInfo,
-                                                                 runStdoutLoggingT)
-import           Control.Monad.Parallel                         as MP
-import           Control.Monad.Reader                           (ReaderT (..),
-                                                                 asks)
-import           Control.Monad.Trans.Maybe                      (MaybeT (..))
-import           Crypto.Hash.SHA256                             (hmac)
+import           Control.Arrow                                   ((&&&), (|||))
+import           Control.Exception.Safe                          (MonadThrow)
+import           Control.Monad                                   (forM_, unless)
+import           Control.Monad.Except                            (MonadError (..))
+import           Control.Monad.Extra                             (ifM)
+import           Control.Monad.IO.Class                          (MonadIO (..))
+import           Control.Monad.Logger                            (LoggingT (..),
+                                                                  logError,
+                                                                  logInfo,
+                                                                  runStdoutLoggingT)
+import           Control.Monad.Parallel                          as MP
+import           Control.Monad.Reader                            (ReaderT (..),
+                                                                  asks)
+import           Control.Monad.Trans.Maybe                       (MaybeT (..))
+import           Crypto.Hash.SHA256                              (hmac)
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.ByteString                                as B
-import qualified Data.ByteString.Base64                         as Base64
-import qualified Data.ByteString.Lazy                           as BL
-import           Data.Functor                                   (($>))
-import qualified Data.HashMap.Strict                            as HM
-import qualified Data.List.NonEmpty                             as NE
-import           Data.Maybe                                     (fromMaybe)
-import           Data.String                                    (IsString (..))
-import qualified Data.Text                                      as T
-import qualified Data.Text.Encoding                             as T
-import qualified Data.Vector                                    as V
-import qualified Network.HTTP.Media                             as M
-import           Network.Wai.Handler.Warp                       (Port, Settings,
-                                                                 defaultSettings,
-                                                                 runSettings,
-                                                                 setBeforeMainLoop,
-                                                                 setPort)
-import qualified Options.Applicative.Help.Pretty                as OA
-import qualified Path                                           as P
+import qualified Data.ByteString                                 as B
+import qualified Data.ByteString.Base64                          as Base64
+import qualified Data.ByteString.Lazy                            as BL
+import           Data.Functor                                    (($>))
+import qualified Data.HashMap.Strict                             as HM
+import qualified Data.List.NonEmpty                              as NE
+import           Data.Maybe                                      (fromMaybe)
+import           Data.String                                     (IsString (..))
+import qualified Data.Text                                       as T
+import qualified Data.Text.Encoding                              as T
+import qualified Data.Vector                                     as V
+import qualified Network.HTTP.Media                              as M
+import           Network.Wai.Handler.Warp                        (Port,
+                                                                  Settings,
+                                                                  defaultSettings,
+                                                                  runSettings,
+                                                                  setBeforeMainLoop,
+                                                                  setPort)
+import qualified Options.Applicative.Help.Pretty                 as OA
+import qualified Path                                            as P
 import           Servant
-import           Servant.API.ContentTypes                       (Accept (..))
-import           Servant.Server                                 (Application,
-                                                                 Handler (..),
-                                                                 Server,
-                                                                 hoistServer,
-                                                                 serve)
+import           Servant.API.ContentTypes                        (Accept (..))
+import           Servant.Server                                  (Application,
+                                                                  Handler (..),
+                                                                  Server,
+                                                                  hoistServer,
+                                                                  serve)
 import           Servant.Server.Internal.ServerError
 
-import           LBKiirotori.AccessToken                        (getAccessToken)
+import           LBKiirotori.AccessToken                         (getAccessToken)
 import           LBKiirotori.API.PushMessage
-import           LBKiirotori.BotProfile                         (getBotUserId)
-import           LBKiirotori.Config                             (LBKiirotoriAppConfig (..),
-                                                                 LBKiirotoriConfig (..),
-                                                                 readConfigWithLog)
-import           LBKiirotori.Data.MessageObject                 (MessageBody (..),
-                                                                 textMessage)
-import qualified LBKiirotori.Database.MySQL                     as MySQL
-import qualified LBKiirotori.Database.Redis                     as Redis
-import           LBKiirotori.Internal.Utils                     (hoistMaybe,
-                                                                 tshow)
+import           LBKiirotori.BotProfile                          (getBotUserId)
+import           LBKiirotori.Config                              (LBKiirotoriAppConfig (..),
+                                                                  LBKiirotoriConfig (..),
+                                                                  readConfigWithLog)
+import           LBKiirotori.Data.MessageObject                  (MessageBody (..),
+                                                                  textMessage)
+import qualified LBKiirotori.Database.MySQL                      as MySQL
+import qualified LBKiirotori.Database.Redis                      as Redis
+import           LBKiirotori.Internal.Utils                      (hoistMaybe,
+                                                                  tshow)
 import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
-instance EventHandler LineEventObject where
-    handle x
-        | lineEventType x == LineEventTypeJoin = joinEvent x
-        | lineEventType x == LineEventTypeMessage = messageEvent x
-        | otherwise = $(logInfo) (tshow x)
-
-instance EventHandler ExtEventObject where
-    handle x
-        | extEventType x == ExtEventTypeSendPlain = do
-            $(logInfo) ("sendPlain instruction is comming from " <> extEventSource x)
-            case (extEventTarget x, extEventMessages x) of
-                (Just target, Just messages) ->
-                    bindM2 pushMessage getAccessToken $ pure $ messageObject target messages
-                _ -> unexpectedUndefined
-        | otherwise = $(logError) ("invalid requests: " <> tshow x) -- TODO
-        where
-            unexpectedUndefined = $(logError)
-                ("sendPlain requested but target or message is not defined: " <> tshow x)
-            messageObject target messages = PushMessage {
-                pmTo = target
-              , pmMessages = map (\x -> MBText $ textMessage x Nothing Nothing) messages
-              }
+import           LBKiirotori.Webhook.EventHandlers.Ext.SendPlain
 
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
 data RequestBody e = RequestBody {

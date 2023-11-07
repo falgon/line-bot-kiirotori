@@ -1,4 +1,4 @@
-module LBKiirotori.Webhook.EventHandlers.Message.Parser (
+module LBKiirotori.Webhook.EventHandlers.LINE.Message.Parser (
     lexeme
 ) where
 

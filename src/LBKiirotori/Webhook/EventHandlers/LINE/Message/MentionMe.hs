@@ -1,4 +1,4 @@
-module LBKiirotori.Webhook.EventHandlers.Message.MentionMe (
+module LBKiirotori.Webhook.EventHandlers.LINE.Message.MentionMe (
     repliedMe
 ) where
 

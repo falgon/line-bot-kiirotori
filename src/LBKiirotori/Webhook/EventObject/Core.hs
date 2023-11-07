@@ -5,7 +5,6 @@ module LBKiirotori.Webhook.EventObject.Core (
   , LineEventObject (..)
   , ExtEventType (..)
   , ExtEventObject (..)
-  , EventHandler (..)
 ) where
 
 import           Data.Aeson
@@ -23,9 +22,6 @@ import           LBKiirotori.Webhook.EventObject.EventMode
 import           LBKiirotori.Webhook.EventObject.EventSource
 import           LBKiirotori.Webhook.EventObject.EventType
 import           LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler)
-
-class EventHandler a where
-    handle :: a -> LineBotHandler ()
 
 data LineEventObject = LineEventObject {
     lineEventType            :: LineEventType

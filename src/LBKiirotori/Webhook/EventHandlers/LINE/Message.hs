@@ -1,4 +1,6 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module LBKiirotori.Webhook.EventHandlers.LINE.Message (
     messageEvent
 ) where
@@ -26,4 +28,3 @@ messageEvent e
                     ($(logInfo) "the message is not replied me")
                     (runMessageEvent cmd (MessageEventData (Just tk) e))
     | otherwise = throwString $ mconcat [ "expected message event: ", show e ]
-

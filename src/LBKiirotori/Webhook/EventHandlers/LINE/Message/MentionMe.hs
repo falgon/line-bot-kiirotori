@@ -34,4 +34,3 @@ repliedMe mobj = runMaybeT $
     hoistMaybe (lemText mobj)
         >>= M.runParserT repliedMeParser mempty
         >>= (lift . throwString . M.errorBundlePretty ||| hoistMaybe)
-

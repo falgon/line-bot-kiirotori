@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module LBKiirotori.Webhook.EventHandlers.Ext where
 
 import           Control.Monad.Logger                            (logError)

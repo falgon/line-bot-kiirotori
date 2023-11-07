@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module LBKiirotori.Webhook.EventHandlers.Ext.SendPlain (
     sendPlain
 ) where

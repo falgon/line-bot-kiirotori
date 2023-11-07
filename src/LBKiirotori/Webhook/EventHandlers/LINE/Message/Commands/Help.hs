@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module LBKiirotori.Webhook.EventHandlers.LINE.Message.Commands.Help (
     helpCmd
 ) where
@@ -16,4 +17,3 @@ helpCmd :: MessageEvent ()
 helpCmd = (lexeme (MC.string' "help") *> M.eof)
     *> lift (lift $ $(logInfo) "requested help command, send reply message")
     *> replyOneText "help!"
-

@@ -71,8 +71,6 @@ import           LBKiirotori.Webhook.EventHandlers
 import           LBKiirotori.Webhook.EventObject
 import           LBKiirotori.Webhook.EventObject.LineBotHandler
 
-import           LBKiirotori.Webhook.EventHandlers.Ext.SendPlain
-
 -- c.f. https://developers.line.biz/ja/reference/messaging-api/#request-body
 data RequestBody e = RequestBody {
     rbDst    :: T.Text

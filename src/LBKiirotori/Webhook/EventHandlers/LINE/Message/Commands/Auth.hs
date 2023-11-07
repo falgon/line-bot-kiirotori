@@ -1,5 +1,8 @@
-{-# LANGUAGE DataKinds, LambdaCase, OverloadedStrings, TemplateHaskell,
-             TupleSections #-}
+{-# LANGUAGE DataKinds         #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE TupleSections     #-}
 module LBKiirotori.Webhook.EventHandlers.LINE.Message.Commands.Auth (
     checkAuthed
   , authCmd

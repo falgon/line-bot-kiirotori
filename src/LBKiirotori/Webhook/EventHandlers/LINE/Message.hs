@@ -1,4 +1,6 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
 module LBKiirotori.Webhook.EventHandlers.LINE.Message (
     messageEvent
 ) where

@@ -28,4 +28,3 @@ messageEvent e
                     ($(logInfo) "the message is not replied me")
                     (runMessageEvent cmd (MessageEventData (Just tk) e))
     | otherwise = throwString $ mconcat [ "expected message event: ", show e ]
-

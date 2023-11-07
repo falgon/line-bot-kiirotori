@@ -16,4 +16,3 @@ lexeme :: Ord e
     => M.ParsecT e T.Text m a
     -> M.ParsecT e T.Text m a
 lexeme = MCL.lexeme spaceConsumer
-

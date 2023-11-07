@@ -17,4 +17,3 @@ helpCmd :: MessageEvent ()
 helpCmd = (lexeme (MC.string' "help") *> M.eof)
     *> lift (lift $ $(logInfo) "requested help command, send reply message")
     *> replyOneText "help!"
-

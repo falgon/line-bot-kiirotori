@@ -21,8 +21,9 @@ jobs:
       - name: Setup haskell stack
         if: steps.stack-cache.outputs.cache-hit != 'true'
         run: |
-           stack config set system-ghc --global true
-           stack config set install-ghc --global false
+          stack config set system-ghc --global true
+          stack config set install-ghc --global false
+          stack config set recommend-stack-upgrade false
       - name: Build
         run: stack build --fast
       - name: Test

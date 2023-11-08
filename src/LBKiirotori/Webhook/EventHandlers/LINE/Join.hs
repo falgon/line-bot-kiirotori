@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
-module LBKiirotori.Webhook.EventHandlers.Join (
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
+module LBKiirotori.Webhook.EventHandlers.LINE.Join (
     joinEvent
 ) where
 

@@ -3,22 +3,25 @@
 module LBKiirotori.Webhook.EventObject.Core (
     LineEventType (..)
   , LineEventObject (..)
+  , ExtEventType (..)
+  , ExtEventObject (..)
 ) where
 
 import           Data.Aeson
 import           Data.Aeson.Types
-import qualified Data.HashMap.Strict                             as HM
-import           Data.Maybe                                      (catMaybes)
+import qualified Data.HashMap.Strict                                 as HM
+import           Data.Maybe                                          (catMaybes)
 import           Data.Scientific
-import qualified Data.Text                                       as T
-import           Data.Word                                       (Word32)
+import qualified Data.Text                                           as T
+import           Data.Word                                           (Word32)
 
-import           LBKiirotori.Internal.Utils                      (tshow)
+import           LBKiirotori.Internal.Utils                          (tshow)
 import           LBKiirotori.Webhook.EventObject.DeliveryContext
 import           LBKiirotori.Webhook.EventObject.EventMessage
 import           LBKiirotori.Webhook.EventObject.EventMode
 import           LBKiirotori.Webhook.EventObject.EventSource
 import           LBKiirotori.Webhook.EventObject.EventType
+import           LBKiirotori.Webhook.EventObject.LineBotHandler.Data (LineBotHandler)
 
 data LineEventObject = LineEventObject {
     lineEventType            :: LineEventType
@@ -54,4 +57,37 @@ instance ToJSON LineEventObject where
       , Just ("deliveryContext", toJSON $ lineEventDeliveryContext v)
       , ("replyToken",) . String <$> lineEventReplyToken v
       , ("message",) . toJSON <$> lineEventMessage v
+      ]
+
+data ExtEventObject = ExtEventObject {
+    extEventType       :: ExtEventType -- event type, NOTE Currently there is only the ability to send plaintext
+  , extEventTimestamp  :: Scientific -- timestamp
+  , extEventSource     :: T.Text -- Information about hitting api
+  , extWebhookEventId  :: T.Text -- ID to uniquely identify the webhook event. String in ULID format
+  , extDeliveryContext :: ExtDeliveryContext -- Whether the webhook event was resent
+  , extEventMessages   :: Maybe [T.Text] -- TODO: Currently, the eventtype only has the function of sending plaintext, so it is just a text type.
+  , extEventTarget     :: Maybe T.Text -- Valid for message sending events. ID of user/group/room.
+  } deriving Show
+
+instance FromJSON ExtEventObject where
+    parseJSON (Object v) = ExtEventObject
+        <$> v .: "type"
+        <*> v .: "timestamp"
+        <*> v .: "source"
+        <*> v .: "webhookEventId"
+        <*> v .: "deliveryContext"
+        <*> v .:? "messages"
+        <*> v .:? "target"
+    parseJSON invalid = prependFailure "parsing ExtEventObject failed, "
+        $ typeMismatch "Object" invalid
+
+instance ToJSON ExtEventObject where
+    toJSON v = Object $ HM.fromList $ catMaybes [
+        Just ("type", toJSON $ extEventType v)
+      , Just ("timestamp", Number $ extEventTimestamp v)
+      , Just ("source", String $ extEventSource v)
+      , Just ("webhookEventId", String $ extWebhookEventId v)
+      , Just ("deliveryContext", toJSON $ extDeliveryContext v)
+      , ("messages",) . toJSON <$> extEventMessages v
+      , ("target",) . String <$> extEventTarget v
       ]

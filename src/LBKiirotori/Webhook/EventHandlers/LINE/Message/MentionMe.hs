@@ -1,4 +1,4 @@
-module LBKiirotori.Webhook.EventHandlers.Message.MentionMe (
+module LBKiirotori.Webhook.EventHandlers.LINE.Message.MentionMe (
     repliedMe
 ) where
 
@@ -34,4 +34,3 @@ repliedMe mobj = runMaybeT $
     hoistMaybe (lemText mobj)
         >>= M.runParserT repliedMeParser mempty
         >>= (lift . throwString . M.errorBundlePretty ||| hoistMaybe)
-

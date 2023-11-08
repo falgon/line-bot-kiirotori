@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module LBKiirotori.Webhook.EventHandlers.Message.Event (
+module LBKiirotori.Webhook.EventHandlers.LINE.Message.Event (
     MessageEventData (..)
   , MessageEvent
   , runMessageEvent

@@ -1,4 +1,4 @@
-module LBKiirotori.Webhook.EventHandlers.Message.Parser (
+module LBKiirotori.Webhook.EventHandlers.LINE.Message.Parser (
     lexeme
 ) where
 
@@ -16,4 +16,3 @@ lexeme :: Ord e
     => M.ParsecT e T.Text m a
     -> M.ParsecT e T.Text m a
 lexeme = MCL.lexeme spaceConsumer
-

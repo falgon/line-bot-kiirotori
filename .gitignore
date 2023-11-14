@@ -3,3 +3,6 @@
 *.swp
 .env
 docker/rdb/data
+.clasp.json
+.clasprc.json
+node_modules/

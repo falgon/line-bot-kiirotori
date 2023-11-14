@@ -1,6 +1,6 @@
 # 🐥 line-bot-kiirotori [![test](https://github.com/falgon/line-bot-kiirotori/actions/workflows/test.yml/badge.svg)](https://github.com/falgon/line-bot-kiirotori/actions/workflows/test.yml)
 
-LINE Bot for personal use that I use with [Messaging API](https://developers.line.biz/ja/services/messaging-api/).
+The LINE Bot for my personal use with [Messaging API](https://developers.line.biz/ja/services/messaging-api/).
 
 ## Requirements
 

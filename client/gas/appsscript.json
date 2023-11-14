@@ -1,0 +1,14 @@
+{
+  "timeZone": "Asia/Tokyo",
+  "dependencies": {
+    "libraries": [
+      {
+        "userSymbol": "ULID",
+        "version": "1",
+        "libraryId": "1tgILvqgrHaGtKGeXraC6d6tD-C1BCOQBEhHS-IuGSgcGhqOOYxRJdtjY"
+      }
+    ]
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}

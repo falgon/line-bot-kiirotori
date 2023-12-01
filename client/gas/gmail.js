@@ -21,7 +21,10 @@ const getMessage = (thread) => {
 const getUnreadBillingMailsWith = (f) => {
   const alreadyReadLabel = "Kiirotori/TokyoGasAlreadyRead";
   const title = "【myTOKYOGAS】ご請求料金確定のお知らせ";
-  const q = ["from:members@tokyo-gas.co.jp has:nouserlabels", title].join(" ");
+  const q = [
+    "from:official-enews@mail.tokyo-gas.co.jp has:nouserlabels",
+    title,
+  ].join(" ");
   const url = "https://members.tokyo-gas.co.jp/services/mieru/total.html";
 
   const label = getLabel(alreadyReadLabel);
